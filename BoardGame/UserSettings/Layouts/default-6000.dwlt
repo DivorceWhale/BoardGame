@@ -477,9 +477,7 @@ MonoBehaviour:
     - m_Data: 46082
     m_LastClickedID:
       m_Data: 46082
-    m_ExpandedIDs:
-    - m_Data: 0
-    - m_Data: 47532
+    m_ExpandedIDs: []
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -510,9 +508,7 @@ MonoBehaviour:
     m_SelectedIDs: []
     m_LastClickedID:
       m_Data: 0
-    m_ExpandedIDs:
-    - m_Data: 0
-    - m_Data: 47532
+    m_ExpandedIDs: []
     m_RenameOverlay:
       m_UserAcceptedRename: 0
       m_Name: 
@@ -1260,23 +1256,23 @@ MonoBehaviour:
       serializedVersion: 2
       x: 0
       y: 21
-      width: 1099
-      height: 508
-    m_Scale: {x: 0.2351852, y: 0.23518519}
-    m_Translation: {x: 549.5, y: 254}
+      width: 1099.1428
+      height: 507.85712
+    m_Scale: {x: 0.23511904, y: 0.23511903}
+    m_Translation: {x: 549.5714, y: 253.92856}
     m_MarginLeft: 0
     m_MarginRight: 0
     m_MarginTop: 0
     m_MarginBottom: 0
     m_LastShownAreaInsideMargins:
       serializedVersion: 2
-      x: -2336.4565
+      x: -2337.4177
       y: -1080
-      width: 4672.913
+      width: 4674.8354
       height: 2160
     m_MinimalGUI: 1
-  m_defaultScale: 0.23518519
-  m_LastWindowPixelSize: {x: 1099, y: 529}
+  m_defaultScale: 0.23511903
+  m_LastWindowPixelSize: {x: 1099.1428, y: 528.8571}
   m_ClearInEditMode: 1
   m_NoCameraWarning: 1
   m_LowResolutionForAspectRatios: 01000000000000000000

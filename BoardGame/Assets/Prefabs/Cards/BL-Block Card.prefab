@@ -251,6 +251,7 @@ GameObject:
   - component: {fileID: 7396408370406243222}
   - component: {fileID: 6387396811074709218}
   - component: {fileID: 570427952340540627}
+  - component: {fileID: -692274572280213598}
   m_Layer: 0
   m_Name: BL-Block Card
   m_TagString: Untagged
@@ -353,6 +354,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-692274572280213598
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7839955836094814092}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ed77139e32da9544aafe196631ad26d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Card
+  cardData: {fileID: 11400000, guid: fef4c80c5534b704eb697441d2d2c0f0, type: 2}
 --- !u!1001 &6573932113098127494
 PrefabInstance:
   m_ObjectHideFlags: 0

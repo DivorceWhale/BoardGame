@@ -251,6 +251,7 @@ GameObject:
   - component: {fileID: 5220215005686396372}
   - component: {fileID: 6242044361228893249}
   - component: {fileID: 1197638365855296813}
+  - component: {fileID: -5269319405601083283}
   m_Layer: 0
   m_Name: Z-Block Card
   m_TagString: Untagged
@@ -353,6 +354,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &-5269319405601083283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6851562869728735425}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ed77139e32da9544aafe196631ad26d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Card
+  cardData: {fileID: 11400000, guid: b573baa307c5ea340ad3e4fd40c7d093, type: 2}
 --- !u!1001 &3633663901947213608
 PrefabInstance:
   m_ObjectHideFlags: 0

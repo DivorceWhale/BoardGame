@@ -251,6 +251,7 @@ GameObject:
   - component: {fileID: 1897361481486907971}
   - component: {fileID: 2564704107037892422}
   - component: {fileID: 4130912151201881340}
+  - component: {fileID: 2038669817044519521}
   m_Layer: 0
   m_Name: T-Block Card
   m_TagString: Untagged
@@ -353,6 +354,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &2038669817044519521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7972821734570743027}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ed77139e32da9544aafe196631ad26d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Card
+  cardData: {fileID: 11400000, guid: 27ad0832c382ca54c9cb60f2f2aed5b3, type: 2}
 --- !u!1001 &369016427614551175
 PrefabInstance:
   m_ObjectHideFlags: 0

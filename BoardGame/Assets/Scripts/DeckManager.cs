@@ -8,7 +8,8 @@ public class DeckManager : MonoBehaviour
     public List<CardData> cards = new List<CardData>();
 
     [Header("Deck Settings")]
-    public int shuffleSeed = 12345;
+    [Tooltip("Warn if the total copies differ from this. Block deck = 30. 0 = no check.")]
+    public int expectedDeckSize = 0;
 
     [Header("Card Timing")]
     public float discardDelay = 5f;
@@ -25,16 +26,29 @@ public class DeckManager : MonoBehaviour
     private List<CardData> discardPile = new List<CardData>();
 
     private Card currentDrawnCard;
+    private bool isSetup;
 
-    private System.Random random;
+    // Cards still obtainable (draw pile plus discard that will be reshuffled).
+    public int TotalAvailable
+    {
+        get
+        {
+            EnsureSetup();
+            return drawPile.Count + discardPile.Count;
+        }
+    }
 
     void Start()
     {
-        random = new System.Random(shuffleSeed);
-
-        SetupDeck();
-
+        EnsureSetup();
         UpdateUI();
+    }
+
+    void EnsureSetup()
+    {
+        if (isSetup) return;
+        isSetup = true;
+        SetupDeck();
     }
 
     void SetupDeck()
@@ -42,7 +56,6 @@ public class DeckManager : MonoBehaviour
         drawPile.Clear();
         discardPile.Clear();
 
-        // Add each card type according to its copy count.
         foreach (CardData card in cards)
         {
             for (int i = 0; i < card.copies; i++)
@@ -51,23 +64,38 @@ public class DeckManager : MonoBehaviour
             }
         }
 
-        Shuffle(drawPile);
+        if (expectedDeckSize > 0 && drawPile.Count != expectedDeckSize)
+        {
+            Debug.LogWarning(name + ": deck has " + drawPile.Count + " cards, expected " + expectedDeckSize);
+        }
+
+        GameRandom.Instance.Shuffle(drawPile);
     }
 
-    void Shuffle(List<CardData> pile)
+    // Headless draw used by the turn state machine. No prefab, no timer.
+    public CardData DrawData()
     {
-        for (int i = pile.Count - 1; i > 0; i--)
-        {
-            int randomIndex = random.Next(i + 1);
+        EnsureSetup();
+        if (drawPile.Count == 0) ReshuffleDiscardPile();
+        if (drawPile.Count == 0) return null;
 
-            CardData temp = pile[i];
-            pile[i] = pile[randomIndex];
-            pile[randomIndex] = temp;
-        }
+        CardData cardData = drawPile[0];
+        drawPile.RemoveAt(0);
+        UpdateUI();
+        return cardData;
+    }
+
+    public void Discard(CardData cardData)
+    {
+        if (cardData == null) return;
+        discardPile.Add(cardData);
+        UpdateUI();
     }
 
     public void DrawCard()
     {
+        EnsureSetup();
+
         if (drawPile.Count == 0)
         {
             ReshuffleDiscardPile();
@@ -79,22 +107,20 @@ public class DeckManager : MonoBehaviour
             return;
         }
 
-        // Discard the currently displayed card if another card is drawn.
-        if (currentDrawnCard != null)
-        {
-            MoveCurrentCardToDiscard();
-        }
-
+        // Check the prefab BEFORE removing the card so a bad card is not lost.
         CardData cardData = drawPile[0];
-
-        drawPile.RemoveAt(0);
-
-        // Create the physical card only when it is drawn.
         if (cardData.cardPrefab == null)
         {
             Debug.LogError("Card prefab is missing for: " + cardData.title);
             return;
         }
+
+        if (currentDrawnCard != null)
+        {
+            MoveCurrentCardToDiscard();
+        }
+
+        drawPile.RemoveAt(0);
 
         currentDrawnCard = Instantiate(
             cardData.cardPrefab,
@@ -111,7 +137,6 @@ public class DeckManager : MonoBehaviour
 
         UpdateUI();
 
-        // Automatically discard after the selected delay.
         CancelInvoke(nameof(MoveCurrentCardToDiscard));
         Invoke(nameof(MoveCurrentCardToDiscard), discardDelay);
     }
@@ -130,9 +155,7 @@ public class DeckManager : MonoBehaviour
             discardPile.Add(cardData);
         }
 
-        // Destroy the physical card.
         Destroy(currentDrawnCard.gameObject);
-
         currentDrawnCard = null;
 
         if (drawnCardText != null)
@@ -140,7 +163,6 @@ public class DeckManager : MonoBehaviour
             drawnCardText.text = "Drawn Card: None";
         }
 
-        // Reshuffle the discard pile when the draw pile is empty.
         if (drawPile.Count == 0)
         {
             ReshuffleDiscardPile();
@@ -149,6 +171,7 @@ public class DeckManager : MonoBehaviour
         UpdateUI();
     }
 
+    // NOTE: the table has not written an empty-deck rule yet. This reshuffle is the code's assumption.
     void ReshuffleDiscardPile()
     {
         if (discardPile.Count == 0)
@@ -163,9 +186,9 @@ public class DeckManager : MonoBehaviour
 
         discardPile.Clear();
 
-        Shuffle(drawPile);
+        GameRandom.Instance.Shuffle(drawPile);
 
-        Debug.Log("Discard pile reshuffled into draw pile.");
+        Debug.Log(name + ": discard pile reshuffled into draw pile.");
 
         UpdateUI();
     }

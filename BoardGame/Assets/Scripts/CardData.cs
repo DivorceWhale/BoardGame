@@ -2,7 +2,8 @@ using UnityEngine;
 
 public enum CardType
 {
-    Block
+    Block,
+    Event
 }
 
 [CreateAssetMenu(fileName = "NewCard", menuName = "QUAKER/Card")]

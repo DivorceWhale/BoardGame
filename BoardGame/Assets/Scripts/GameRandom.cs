@@ -37,6 +37,13 @@ public class GameRandom : MonoBehaviour
         }
     }
 
+    // Restart the sequence so each scenario run can be repeated exactly.
+    public void Reseed(int newSeed)
+    {
+        seed = newSeed;
+        rng = new System.Random(seed);
+    }
+
     public int Next(int maxExclusive)
     {
         return Rng.Next(maxExclusive);

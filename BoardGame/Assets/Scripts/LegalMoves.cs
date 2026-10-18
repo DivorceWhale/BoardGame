@@ -27,11 +27,21 @@ public static class LegalMoves
             case TurnPhase.Place:
                 if (p.heldBlock != null)
                 {
-                    // PLACEHOLDER: any cell, any angle. Add restrictions only when the table decides them
-                    // (for example, whether each tower owns a cell).
-                    int cells = TableNumbers.GridSize * TableNumbers.GridSize;
-                    for (int cell = 0; cell < cells; cell++)
+                    // A scenario can force where a player's first block goes (for example Four Corners).
+                    int forced = -1;
+                    if (p.placements.Count == 0)
                     {
+                        foreach (FirstPlacement fp in s.scenario.firstPlacementSpaces)
+                        {
+                            if (fp.playerIndex == p.index) forced = fp.spaceId;
+                        }
+                    }
+
+                    // Open spaces come from the board asset and the scenario's blocked list.
+                    foreach (SpaceData space in s.board.spaces)
+                    {
+                        if (!s.scenario.IsOpen(space.id)) continue;
+                        if (forced >= 0 && space.id != forced) continue;
                         for (int step = 0; step < TableNumbers.AngleSteps; step++)
                         {
                             list.Add(new GameAction
@@ -39,7 +49,8 @@ public static class LegalMoves
                                 type = ActionType.PlaceBlock,
                                 player = p.index,
                                 card = p.heldBlock,
-                                cell = cell,
+                                space = space.id,
+                                spaceName = space.displayName,
                                 angle = step * TableNumbers.AngleStepDegrees
                             });
                         }
@@ -52,7 +63,7 @@ public static class LegalMoves
         return list;
     }
 
-    public static string Describe(List<GameAction> list)
+    public static string Describe(GameState s, List<GameAction> list)
     {
         if (list.Count == 0) return "none";
 
@@ -75,9 +86,11 @@ public static class LegalMoves
 
         if (placeCount > 0)
         {
+            HashSet<int> distinct = new HashSet<int>();
+            foreach (GameAction a in list) if (a.type == ActionType.PlaceBlock) distinct.Add(a.space);
+            int open = distinct.Count;
             string title = firstPlace.card != null ? firstPlace.card.title : "?";
-            parts.Add("PlaceBlock x" + placeCount + " (" + title + ": any of "
-                + (TableNumbers.GridSize * TableNumbers.GridSize) + " cells x "
+            parts.Add("PlaceBlock x" + placeCount + " (" + title + ": any of " + open + " open spaces x "
                 + TableNumbers.AngleSteps + " angles)");
         }
         return string.Join("; ", parts.ToArray());

@@ -202,7 +202,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 11afff498a1eb8243aefa33f28a4e720, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameRandom
-  seed: 69420
+  seed: 15435
 --- !u!4 &53902868
 Transform:
   m_ObjectHideFlags: 0

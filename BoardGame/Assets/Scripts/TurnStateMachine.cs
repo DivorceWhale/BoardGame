@@ -19,13 +19,55 @@ public class TurnStateMachine
         { TurnPhase.EndCheck,      TurnPhase.Event },   // end of turn: next round, next player
     };
 
-    public TurnStateMachine(DeckManager blockDeck, DeckManager eventDeck, int playerCount)
+    // Everything that varies comes from the scenario asset: players, board, decks, victory, limits.
+    public TurnStateMachine(DeckManager blockDeck, DeckManager eventDeck, ScenarioConfig scenario)
     {
         State.blockDeck = blockDeck;
         State.eventDeck = eventDeck;
-        for (int i = 0; i < playerCount; i++)
+        State.scenario = scenario;
+        State.board = scenario.board;
+        for (int i = 0; i < scenario.playerCount; i++)
         {
-            State.players.Add(new PlayerState { index = i, name = "Player " + (i + 1) });
+            State.players.Add(new PlayerState
+            {
+                index = i,
+                name = "Player " + (i + 1),
+                matchPoints = scenario.startingPointsPerPlayer
+            });
+        }
+        ApplyStartingBlocks();
+    }
+
+    private void NoteHeight(PlayerState p, GameAction placed)
+    {
+        if (p.placements.Count == 1) p.baseSpace = placed.space;
+        if (p.TowerHeight > p.peakHeight) p.peakHeight = p.TowerHeight;
+    }
+
+    private void ApplyStartingBlocks()
+    {
+        ScenarioConfig sc = State.scenario;
+        foreach (StartingBlock sb in sc.startingBlocks)
+        {
+            if (sb.block == null || sb.playerIndex < 0 || sb.playerIndex >= State.players.Count) continue;
+            if (!sc.IsOpen(sb.spaceId))
+            {
+                Log("  Starting block skipped: space " + sb.spaceId + " is blocked in this scenario.");
+                continue;
+            }
+            SpaceData space = State.board != null ? State.board.Get(sb.spaceId) : null;
+            PlayerState p = State.players[sb.playerIndex];
+            GameAction placed = new GameAction
+            {
+                type = ActionType.PlaceBlock,
+                player = sb.playerIndex,
+                card = sb.block,
+                space = sb.spaceId,
+                spaceName = space != null ? space.displayName : "?",
+                angle = sb.angle
+            };
+            p.placements.Add(placed);
+            NoteHeight(p, placed);
         }
     }
 
@@ -34,7 +76,7 @@ public class TurnStateMachine
         if (MatchOver) return;
         GameState s = State;
 
-        Log("=== Game " + s.gameNumber + ", round " + s.round + ", phase " + s.phase
+        Log("=== Game " + s.gameNumber + ", round " + s.round + " (round " + s.roundInGame + " of this game), phase " + s.phase
             + " (active player: " + s.players[s.activePlayer].name + ") ===");
 
         // Seat order starting from the active player. PLACEHOLDER decisions: a random legal move.
@@ -42,7 +84,7 @@ public class TurnStateMachine
         {
             PlayerState p = s.players[(s.activePlayer + i) % s.players.Count];
             List<GameAction> legal = LegalMoves.Get(s, p);
-            Log("  " + p.name + " legal actions: " + LegalMoves.Describe(legal));
+            Log("  " + p.name + " legal actions: " + LegalMoves.Describe(s, legal));
             if (legal.Count > 0)
             {
                 Apply(legal[GameRandom.Instance.Next(legal.Count)]);
@@ -84,23 +126,41 @@ public class TurnStateMachine
 
             case ActionType.PlaceBlock:
                 p.placements.Add(a);
-                State.blockDeck.Discard(a.card);   // ASSUMPTION: used cards recycle (see DeckManager note)
+                NoteHeight(p, a);
+                State.blockDeck.Discard(a.card);   // used cards go to the discard pile (only recycled if refills are on)
                 p.heldBlock = null;
                 Log("    " + p.name + " places " + a);
                 break;
         }
     }
 
-    // PLACEHOLDER: the real shake is a physical motor. This stands in so the loop can run.
+    // PLACEHOLDER: the real shake is a physical motor. The chances come from the scenario asset.
     private void DoShake()
     {
+        ScenarioConfig sc = State.scenario;
         foreach (PlayerState p in State.players) p.fellThisShake = false;
-        int threshold = (int)(TableNumbers.PlaceholderCollapseChance * 1000f);
+
+        // Harder shake: once a tower on a trigger-tagged space has fallen, towers on target-tagged spaces face a boost.
+        bool boostOn = false;
+        if (!string.IsNullOrEmpty(sc.shakeBoostTriggerTag) && State.board != null)
+        {
+            foreach (PlayerState p in State.players)
+            {
+                if (!p.inGame && p.baseSpace >= 0 && State.board.HasTag(p.baseSpace, sc.shakeBoostTriggerTag)) boostOn = true;
+            }
+        }
+
         foreach (PlayerState p in State.players)
         {
-            if (p.inGame) p.fellThisShake = GameRandom.Instance.Next(1000) < threshold;
+            if (!p.inGame) continue;
+            float chance = sc.placeholderCollapseChance;
+            if (boostOn && p.baseSpace >= 0 && State.board.HasTag(p.baseSpace, sc.shakeBoostTargetTag))
+            {
+                chance = Math.Min(1f, chance + sc.shakeBoostChance);
+            }
+            p.fellThisShake = GameRandom.Instance.Next(1000) < (int)(chance * 1000f);
         }
-        Log("  Platform shakes all towers.");
+        Log("  Platform shakes all towers." + (boostOn ? " " + sc.shakeBoostTargetTag + " towers face a harder shake." : ""));
     }
 
     private void DoCollapseCheck()
@@ -115,39 +175,128 @@ public class TurnStateMachine
         }
     }
 
+    private PlayerState Tallest(List<PlayerState> group)
+    {
+        PlayerState best = null;
+        foreach (PlayerState p in group)
+        {
+            if (best == null || p.TowerHeight > best.TowerHeight) best = p;   // ties go to seat order (PLACEHOLDER)
+        }
+        return best;
+    }
+
+    private PlayerState LeaderByMargin(List<PlayerState> standing, int margin)
+    {
+        foreach (PlayerState candidate in standing)
+        {
+            bool leads = true;
+            foreach (PlayerState other in standing)
+            {
+                if (other != candidate && candidate.TowerHeight < other.TowerHeight + margin) leads = false;
+            }
+            if (leads) return candidate;
+        }
+        return null;
+    }
+
     private void DoEndCheck()
     {
+        ScenarioConfig sc = State.scenario;
         List<PlayerState> standing = new List<PlayerState>();
-        foreach (PlayerState p in State.players) if (p.inGame) standing.Add(p);
+        List<PlayerState> fellNow = new List<PlayerState>();
+        foreach (PlayerState p in State.players)
+        {
+            if (p.inGame) standing.Add(p);
+            if (p.fellThisShake) fellNow.Add(p);
+        }
 
         PlayerState winner = null;
-        if (standing.Count == 1)
+        bool limitReached = sc.roundLimit > 0 && State.roundInGame >= sc.roundLimit;
+
+        switch (sc.victoryType)
         {
-            winner = standing[0];
+            case VictoryType.TargetHeight:
+                if (sc.targetHeight > 0)
+                {
+                    List<PlayerState> reached = new List<PlayerState>();
+                    foreach (PlayerState p in standing) if (p.TowerHeight >= sc.targetHeight) reached.Add(p);
+                    winner = Tallest(reached);
+                }
+                break;
+
+            case VictoryType.LeadByMargin:
+                if (sc.leadMargin > 0 && standing.Count > 0) winner = LeaderByMargin(standing, sc.leadMargin);
+                break;
+
+            case VictoryType.TallestAtRoundLimit:
+                if (limitReached && standing.Count > 0)
+                {
+                    winner = Tallest(standing);
+                    Log("  Round limit reached: the tallest standing tower wins.");
+                }
+                break;
         }
-        else if (standing.Count == 0)
+
+        if (winner == null)
         {
-            // Last towers fell together: the tallest of them wins. Ties go to seat order (PLACEHOLDER).
-            foreach (PlayerState p in State.players)
+            if (standing.Count == 0)
             {
-                if (p.fellThisShake && (winner == null || p.TowerHeight > winner.TowerHeight)) winner = p;
+                winner = Tallest(fellNow);   // last towers fell together: the tallest of them wins
+            }
+            else if (standing.Count == 1 && sc.victoryType != VictoryType.TallestAtRoundLimit)
+            {
+                winner = standing[0];
+            }
+            else if (limitReached && sc.victoryType != VictoryType.TallestAtRoundLimit)
+            {
+                winner = Tallest(standing);  // PLACEHOLDER: the posts only define the limit for Fuse Lit
+                Log("  Round limit reached.");
+            }
+            else if (!sc.refillWhenEmpty && State.blockDeck.TotalAvailable < standing.Count)
+            {
+                winner = Tallest(standing);  // PLACEHOLDER: no refills and not enough blocks for another round
+                Log("  The block supply has run out.");
             }
         }
 
         if (winner == null)
         {
-            Log("  Two or more towers still stand: the game continues.");
+            Log("  The game continues.");
             return;
         }
 
-        winner.matchPoints += TableNumbers.PointsPerGameWin;
+        FinishGame(winner);
+    }
+
+    private void FinishGame(PlayerState winner)
+    {
+        ScenarioConfig sc = State.scenario;
+        winner.matchPoints += sc.pointsPerGameWin;
         Log("  " + winner.name + " wins game " + State.gameNumber + " (match points: " + winner.matchPoints + ").");
 
-        if (winner.matchPoints >= TableNumbers.PointsToWinMatch)
+        if (sc.consolationHeight > 0 && sc.consolationPoints > 0)
+        {
+            foreach (PlayerState p in State.players)
+            {
+                if (p.peakHeight >= sc.consolationHeight)
+                {
+                    p.matchPoints += sc.consolationPoints;
+                    Log("  " + p.name + " banks " + sc.consolationPoints + " consolation point(s): reached "
+                        + p.peakHeight + " blocks (match points: " + p.matchPoints + ").");
+                }
+            }
+        }
+
+        PlayerState leader = null;
+        foreach (PlayerState p in State.players)
+        {
+            if (p.matchPoints >= sc.pointsToWinMatch && (leader == null || p.matchPoints > leader.matchPoints)) leader = p;
+        }
+        if (leader != null)
         {
             MatchOver = true;
-            MatchWinner = winner;
-            Log("  " + winner.name + " wins the match.");
+            MatchWinner = leader;
+            Log("  " + leader.name + " wins the match.");
             return;
         }
         StartNewGame();
@@ -161,8 +310,12 @@ public class TurnStateMachine
             p.fellThisShake = false;
             p.placements.Clear();
             p.heldBlock = null;
+            p.peakHeight = 0;
+            p.baseSpace = -1;
         }
+        ApplyStartingBlocks();
         State.gameNumber++;
+        State.roundInGame = 1;
         Log("  Towers rebuilt. Starting game " + State.gameNumber + ".");
     }
 
@@ -173,6 +326,7 @@ public class TurnStateMachine
         State.eventCard = null;
         State.eventDrawn = false;
         State.round++;
+        State.roundInGame++;
 
         int n = State.players.Count;
         for (int i = 1; i <= n; i++)

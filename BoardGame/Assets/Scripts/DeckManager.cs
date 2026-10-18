@@ -4,11 +4,11 @@ using TMPro;
 
 public class DeckManager : MonoBehaviour
 {
-    [Header("Card Data")]
+    [Header("Card Data (used only when no scenario configures the deck)")]
     public List<CardData> cards = new List<CardData>();
 
     [Header("Deck Settings")]
-    [Tooltip("Warn if the total copies differ from this. Block deck = 30. 0 = no check.")]
+    [Tooltip("Warn if the total copies differ from this. 0 = no check.")]
     public int expectedDeckSize = 0;
 
     [Header("Card Timing")]
@@ -28,13 +28,15 @@ public class DeckManager : MonoBehaviour
     private Card currentDrawnCard;
     private bool isSetup;
 
-    // Cards still obtainable (draw pile plus discard that will be reshuffled).
+    [Tooltip("Off = used cards never return to the draw pile (no refills).")]
+    public bool allowRefill = true;
+
     public int TotalAvailable
     {
         get
         {
             EnsureSetup();
-            return drawPile.Count + discardPile.Count;
+            return drawPile.Count + (allowRefill ? discardPile.Count : 0);
         }
     }
 
@@ -72,7 +74,26 @@ public class DeckManager : MonoBehaviour
         GameRandom.Instance.Shuffle(drawPile);
     }
 
-    // Headless draw used by the turn state machine. No prefab, no timer.
+    // Build the deck from a scenario asset: which cards are in play and how many copies of each.
+    public void Configure(List<DeckEntry> entries)
+    {
+        isSetup = true;
+        drawPile.Clear();
+        discardPile.Clear();
+
+        foreach (DeckEntry entry in entries)
+        {
+            if (entry.card == null) continue;
+            for (int i = 0; i < entry.copies; i++)
+            {
+                drawPile.Add(entry.card);
+            }
+        }
+
+        GameRandom.Instance.Shuffle(drawPile);
+        UpdateUI();
+    }
+
     public CardData DrawData()
     {
         EnsureSetup();
@@ -107,7 +128,6 @@ public class DeckManager : MonoBehaviour
             return;
         }
 
-        // Check the prefab BEFORE removing the card so a bad card is not lost.
         CardData cardData = drawPile[0];
         if (cardData.cardPrefab == null)
         {
@@ -174,7 +194,7 @@ public class DeckManager : MonoBehaviour
     // NOTE: the table has not written an empty-deck rule yet. This reshuffle is the code's assumption.
     void ReshuffleDiscardPile()
     {
-        if (discardPile.Count == 0)
+        if (!allowRefill || discardPile.Count == 0)
         {
             return;
         }

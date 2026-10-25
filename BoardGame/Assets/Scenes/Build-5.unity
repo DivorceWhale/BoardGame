@@ -2632,7 +2632,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2d9814e53d0e34042bdd6c530045c174, type: 2}
   - {fileID: 11400000, guid: 4b04af53b06343443bbb0396e6e652ac, type: 2}
   roundsToRun: 1
-  runOnStart: 1
+  runOnStart: 0
 --- !u!4 &1344576272
 Transform:
   m_ObjectHideFlags: 0

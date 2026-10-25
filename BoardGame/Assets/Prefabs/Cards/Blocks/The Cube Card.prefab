@@ -367,6 +367,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Card
   cardData: {fileID: 11400000, guid: c5ada91e96eaeab41826d875ab507cd9, type: 2}
+  label: {fileID: 3991176076103840362}
 --- !u!1001 &6666116046771496956
 PrefabInstance:
   m_ObjectHideFlags: 0

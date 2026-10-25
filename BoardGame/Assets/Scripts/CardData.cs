@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum CardType
@@ -20,6 +21,11 @@ public class CardData : ScriptableObject
 
     [Header("Deck")]
     public int copies = 1;
+
+    [Header("Card Face (Build 6)")]
+    public Sprite art;
+    public EventWeight weight = EventWeight.None;
+    public List<CardIcon> icons = new List<CardIcon>();
 
     [Header("3D Card")]
     public Card cardPrefab;

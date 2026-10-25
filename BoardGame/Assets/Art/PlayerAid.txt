@@ -1,0 +1,19 @@
+QUAKER - PLAYER AID
+
+TURN ORDER (every round)
+1. Event: the starting player draws and reads one event card.
+2. Draw: every player draws one block card and takes that block.
+3. Choose and commit: place your block on your tower at any angle. Once you let go, it stays.
+4. Shake: when every block is placed, the board shakes.
+5. Check: a fallen tower is out for this game. One tower left = that player scores 1 point.
+6. Pass: discard the event and block cards. Starting player passes clockwise.
+
+ACTIONS AND COSTS
+Choose a cell - costs nothing; you use the block you drew.
+Commit the block - costs the block; no adjusting after release.
+Negotiate the tallest tower - costs table time; players must agree.
+Crew abilities, once per game: Redraw, Skip placement, Ignore an event, Swap block cards.
+
+WINNING
+Last tower standing wins the game (+1 point). Towers fall in the same shake: tallest wins.
+First to 3 points wins the match.

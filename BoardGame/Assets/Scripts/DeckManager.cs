@@ -22,6 +22,10 @@ public class DeckManager : MonoBehaviour
     public TMP_Text discardPileText;
     public TMP_Text drawnCardText;
 
+    [Header("Build 6")]
+    [Tooltip("Optional CardUI that shows the face of the last card drawn.")]
+    public CardView uiDisplay;
+
     private List<CardData> drawPile = new List<CardData>();
     private List<CardData> discardPile = new List<CardData>();
 
@@ -155,6 +159,12 @@ public class DeckManager : MonoBehaviour
             drawnCardText.text = "Drawn Card: " + cardData.title;
         }
 
+        if (uiDisplay != null)
+        {
+            uiDisplay.gameObject.SetActive(true);
+            uiDisplay.Show(cardData);
+        }
+
         UpdateUI();
 
         CancelInvoke(nameof(MoveCurrentCardToDiscard));
@@ -178,7 +188,8 @@ public class DeckManager : MonoBehaviour
         Destroy(currentDrawnCard.gameObject);
         currentDrawnCard = null;
 
-        if (drawnCardText != null)
+        // With a card face on screen, keep its name showing until the next draw
+        if (drawnCardText != null && uiDisplay == null)
         {
             drawnCardText.text = "Drawn Card: None";
         }

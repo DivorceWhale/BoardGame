@@ -152,7 +152,7 @@ GameObject:
   - component: {fileID: 2482375317981709796}
   - component: {fileID: 4547183507285798535}
   m_Layer: 0
-  m_Name: EC17
+  m_Name: EventCard
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -264,7 +264,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ed77139e32da9544aafe196631ad26d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Card
-  cardData: {fileID: 11400000, guid: 73ae6719949ed094395158c6b8fcb199, type: 2}
+  cardData: {fileID: 0}
+  label: {fileID: 5220780191818964619}
 --- !u!1 &7735333741930759652
 GameObject:
   m_ObjectHideFlags: 0

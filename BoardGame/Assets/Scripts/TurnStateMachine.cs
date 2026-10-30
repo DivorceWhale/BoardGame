@@ -106,6 +106,20 @@ public class TurnStateMachine
         }
     }
 
+    // Build 7: the direct path. Any caller (UI, AI, test) can try an action; it is checked against
+    // the rulesheet first and refused with the rule id instead of being applied and corrected later.
+    public RuleResult TryApply(GameAction a)
+    {
+        RuleResult r = LegalMoves.Validate(State, a);
+        if (!r.legal)
+        {
+            Log("    " + r);
+            return r;
+        }
+        Apply(a);
+        return r;
+    }
+
     private void Apply(GameAction a)
     {
         PlayerState p = State.players[a.player];
@@ -120,6 +134,7 @@ public class TurnStateMachine
 
             case ActionType.DrawBlockCard:
                 p.heldBlock = State.blockDeck.DrawData();
+                p.drewThisRound = true;
                 Log("    " + p.name + " draws block: "
                     + (p.heldBlock != null ? p.heldBlock.title : "none"));
                 break;
@@ -129,7 +144,14 @@ public class TurnStateMachine
                 NoteHeight(p, a);
                 State.blockDeck.Discard(a.card);   // used cards go to the discard pile (only recycled if refills are on)
                 p.heldBlock = null;
+                p.placedThisRound = true;
                 Log("    " + p.name + " places " + a);
+                break;
+
+            case ActionType.StartShake:
+                State.shakeDone = true;
+                foreach (PlayerState q in State.players) q.blocksBeforeShake = q.TowerHeight;
+                Log("    " + p.name + " starts the shake.");
                 break;
         }
     }
@@ -239,7 +261,15 @@ public class TurnStateMachine
 
         if (winner == null)
         {
-            if (standing.Count == 0)
+            if (standing.Count == 0 && State.useRulesheet)
+            {
+                // Stranger test #1, fixed by R-17: most blocks before the shake wins; equal towers each score.
+                List<PlayerState> tied = MostBlocks(fellNow);
+                Log("  R-17: every remaining tower collapsed in the same shake; most blocks before the shake wins.");
+                FinishGame(tied[0], tied);
+                return;
+            }
+            else if (standing.Count == 0)
             {
                 winner = Tallest(fellNow);   // last towers fell together: the tallest of them wins
             }
@@ -268,11 +298,24 @@ public class TurnStateMachine
         FinishGame(winner);
     }
 
-    private void FinishGame(PlayerState winner)
+    private List<PlayerState> MostBlocks(List<PlayerState> group)
+    {
+        int best = -1;
+        foreach (PlayerState p in group) if (p.blocksBeforeShake > best) best = p.blocksBeforeShake;
+        List<PlayerState> top = new List<PlayerState>();
+        foreach (PlayerState p in group) if (p.blocksBeforeShake == best) top.Add(p);
+        return top;
+    }
+
+    private void FinishGame(PlayerState winner, List<PlayerState> sharedWith = null)
     {
         ScenarioConfig sc = State.scenario;
-        winner.matchPoints += sc.pointsPerGameWin;
-        Log("  " + winner.name + " wins game " + State.gameNumber + " (match points: " + winner.matchPoints + ").");
+        List<PlayerState> winners = sharedWith ?? new List<PlayerState> { winner };
+        foreach (PlayerState w in winners)
+        {
+            w.matchPoints += sc.pointsPerGameWin;
+            Log("  " + (State.useRulesheet ? "R-16: " : "") + w.name + " wins game " + State.gameNumber + " (match points: " + w.matchPoints + ").");
+        }
 
         if (sc.consolationHeight > 0 && sc.consolationPoints > 0)
         {
@@ -296,7 +339,7 @@ public class TurnStateMachine
         {
             MatchOver = true;
             MatchWinner = leader;
-            Log("  " + leader.name + " wins the match.");
+            Log("  " + (State.useRulesheet ? "R-18: " : "") + leader.name + " wins the match.");
             return;
         }
         StartNewGame();
@@ -327,6 +370,13 @@ public class TurnStateMachine
         State.eventDrawn = false;
         State.round++;
         State.roundInGame++;
+        State.shakeDone = false;
+        foreach (PlayerState p in State.players)
+        {
+            p.drewThisRound = false;
+            p.placedThisRound = false;
+            p.skippedThisRound = false;
+        }
 
         int n = State.players.Count;
         for (int i = 1; i <= n; i++)
@@ -334,7 +384,7 @@ public class TurnStateMachine
             int next = (State.activePlayer + i) % n;
             if (State.players[next].inGame)
             {
-                State.activePlayer = next;
+                State.activePlayer = next;   // R-20: first player passes clockwise to the next standing player
                 break;
             }
         }

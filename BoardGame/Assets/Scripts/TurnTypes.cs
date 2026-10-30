@@ -14,7 +14,8 @@ public enum ActionType
 {
     DrawEventCard,
     DrawBlockCard,
-    PlaceBlock
+    PlaceBlock,
+    StartShake      // Build 7: the shake is a player action so the rules can refuse it (R-14, R-15)
 }
 
 public struct GameAction
@@ -25,13 +26,14 @@ public struct GameAction
     public int space;         // PlaceBlock: id of the board space (from the BoardLayout asset)
     public string spaceName;
     public int angle;         // PlaceBlock: degrees
+    public int baseOwner;     // Build 7, PlaceBlock: whose tower base the block goes on (rulesheet: own base only)
 
     public override string ToString()
     {
         if (type == ActionType.PlaceBlock)
         {
             string title = card != null ? card.title : "?";
-            return "PlaceBlock(" + title + ", space " + space + " " + spaceName + ", angle " + angle + ")";
+            return "PlaceBlock(" + title + ", base of P" + (baseOwner + 1) + ", space " + space + " " + spaceName + ", angle " + angle + ")";
         }
         return type.ToString();
     }

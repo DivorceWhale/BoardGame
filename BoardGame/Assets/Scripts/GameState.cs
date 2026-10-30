@@ -12,6 +12,12 @@ public class PlayerState
     public CardData heldBlock;
     public List<GameAction> placements = new List<GameAction>();
 
+    // Build 7 (rulesheet): per-round flags the legality checks read
+    public bool drewThisRound;
+    public bool placedThisRound;
+    public bool skippedThisRound;
+    public int blocksBeforeShake;
+
     // PLACEHOLDER: height = number of blocks placed. Replace when the table defines height.
     public int TowerHeight { get { return placements.Count; } }
 }
@@ -30,4 +36,12 @@ public class GameState
     public DeckManager eventDeck;
     public ScenarioConfig scenario;
     public BoardLayout board;
+
+    // Build 7: when true, every action is checked against the rulesheet (RuleCheck).
+    // Build 5/6 scenes leave this off and keep their scenario rules.
+    public bool useRulesheet;
+    public bool ownBases;          // each player builds on their own 4x4 tower base (rulesheet section 2)
+    public int buildTurn = -1;     // Build phase: index of the player whose turn it is to place
+    public bool shakeDone;
+    public bool deckShort;         // R-05: not enough block cards for every standing player this round
 }

@@ -8,7 +8,7 @@ using UnityEngine;
 // The numbers below are the defaults for a brand-new asset only; the asset holds the real values.
 //
 // Balance decisions are made at the table. Change a value here only after the table has changed it,
-// and log it in CHANGELOG.md with the date, the reason, and what the playtest showed.
+// and log it in the team changelog with the date, the reason, and what the playtest showed.
 [CreateAssetMenu(fileName = "QuakerBalance", menuName = "QUAKER/Balance Config")]
 public class BalanceConfig : ScriptableObject
 {

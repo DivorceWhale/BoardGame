@@ -86,11 +86,27 @@ public static class LegalMoves
         candidates.Add(new GameAction { type = ActionType.DrawEventCard, player = p.index });
         candidates.Add(new GameAction { type = ActionType.DrawBlockCard, player = p.index });
         candidates.Add(new GameAction { type = ActionType.StartShake, player = p.index });
+        candidates.Add(new GameAction { type = ActionType.RedrawBlock, player = p.index });
+        candidates.Add(new GameAction { type = ActionType.SwapOption, player = p.index });
+        for (int i = 0; i < s.players.Count; i++)
+            if (i != p.index) candidates.Add(new GameAction { type = ActionType.PickRival, player = p.index, target = i });
 
-        if (p.heldBlock != null && s.board != null)
+        if (s.board != null)
         {
-            // Candidates on every base, so the own-base rule (R-09) is what removes the others.
-            for (int owner = 0; owner < s.players.Count; owner++)
+            // Rulesheet v2: one shared tower base. Opening placement offers every block style;
+            // the Build phase offers the style on the player's block card.
+            List<CardData> styles = new List<CardData>();
+            if (s.phase == TurnPhase.Opening && s.scenario != null)
+            {
+                foreach (DeckEntry e in s.scenario.blockDeck)
+                    if (e.card != null && !styles.Contains(e.card)) styles.Add(e.card);
+            }
+            else if (p.heldBlock != null)
+            {
+                styles.Add(p.heldBlock);
+            }
+
+            foreach (CardData style in styles)
             {
                 foreach (SpaceData space in s.board.spaces)
                 {
@@ -98,8 +114,7 @@ public static class LegalMoves
                     {
                         type = ActionType.PlaceBlock,
                         player = p.index,
-                        card = p.heldBlock,
-                        baseOwner = owner,
+                        card = style,
                         space = space.id,
                         spaceName = space.displayName,
                         angle = 0   // any angle is legal (physical); one entry per space
@@ -145,7 +160,12 @@ public static class LegalMoves
             string title = firstPlace.card != null ? firstPlace.card.title : "?";
             if (s.useRulesheet)
             {
-                parts.Add("PlaceBlock (" + title + ") on any of " + placeCount + " spaces of their own tower base");
+                HashSet<int> spaces = new HashSet<int>();
+                HashSet<CardData> kinds = new HashSet<CardData>();
+                foreach (GameAction a in list)
+                    if (a.type == ActionType.PlaceBlock) { spaces.Add(a.space); kinds.Add(a.card); }
+                string what = kinds.Count > 1 ? "any of " + kinds.Count + " block styles" : title;
+                parts.Add("PlaceBlock (" + what + ") on " + spaces.Count + " of the 16 spaces of the tower base");
                 return string.Join("; ", parts.ToArray());
             }
             parts.Add("PlaceBlock x" + placeCount + " (" + title + ": any of " + open + " open spaces x "

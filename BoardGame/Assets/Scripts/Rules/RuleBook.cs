@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-// Every rule from the rewritten rulesheet that a program can mark as satisfied or violated.
+// Every rule from Quaker Rulesheet v2 (one shared tower) that a program can mark as satisfied or violated.
 // The ids match the Rules section on the Index Cards Padlet. Refusals always name one of these ids.
 public static class RuleBook
 {
@@ -10,95 +10,77 @@ public static class RuleBook
         public string id;
         public string section;   // rulesheet section the wording comes from
         public string text;
+        public string brief;     // one short line for the on-screen panel
     }
 
     public static readonly List<Rule> All = new List<Rule>
     {
-        new Rule { id = "R-01", section = "4, 7", text = "A player whose tower has collapsed is out: they do not flip, draw or place for the rest of the game." },
-        new Rule { id = "R-02", section = "4",    text = "Each action happens only in its own phase: flip the event card in the Event phase, draw in the Draw phase, place in the Build phase, shake in the Shake phase." },
-        new Rule { id = "R-03", section = "4",    text = "Only the first player flips the event card, and only once per round." },
-        new Rule { id = "R-04", section = "4, 5", text = "Each standing player draws exactly 1 block card per round." },
-        new Rule { id = "R-05", section = "7",    text = "If the block deck has fewer cards than there are standing players, nobody draws or places this round." },
-        new Rule { id = "R-06", section = "4",    text = "The Build phase goes clockwise from the first player; you place only on your turn." },
-        new Rule { id = "R-07", section = "5",    text = "You may place only the block style shown on your block card for this round." },
-        new Rule { id = "R-08", section = "4, 5", text = "Each standing player places exactly 1 block per round." },
-        new Rule { id = "R-09", section = "5",    text = "You may place only on your own tower base." },
-        new Rule { id = "R-10", section = "5",    text = "A block goes on one of the 16 spaces of the tower base (directly or on top of blocks there)." },
-        new Rule { id = "R-11", section = "5",    text = "Event card 11 (Crane Swings Overhead): no block may be placed on a Center Hub space this round." },
-        new Rule { id = "R-12", section = "5",    text = "Event card 7 (Scaffolding Creaks): your block must go on a grid-edge space (Corner Zone or Edge Zone)." },
-        new Rule { id = "R-13", section = "5, 7", text = "Event card 4 (Coffee Break): everyone skips their placement this round. Event card 18 (Gas Line Scare): no draws, placements or shake this round." },
-        new Rule { id = "R-14", section = "4",    text = "The shake starts only after every standing player has placed or skipped." },
-        new Rule { id = "R-15", section = "4",    text = "The first player runs the shake; if any player is out, an out player runs it instead." },
-        new Rule { id = "R-16", section = "1, 4", text = "A game ends after a shake that leaves 1 or 0 towers standing; the last tower standing takes 1 point marker." },
-        new Rule { id = "R-17", section = "1, 7", text = "If every remaining tower collapses in the same shake, the tower with the most blocks before that shake wins; equal towers each take 1 point marker." },
-        new Rule { id = "R-18", section = "1",    text = "The match ends when a player holds 3 point markers; players who reach 3 together share the win." },
-        new Rule { id = "R-19", section = "7",    text = "If the block deck ran short this round, the game ends after the shake and the standing tower with the most blocks wins; equal towers each take 1 point marker." },
-        new Rule { id = "R-20", section = "4",    text = "After each round the first-player role passes clockwise to the next player whose tower is standing." },
+        R("R-01", "3",    "Opening placement: before round 1 of every game, each player places exactly 1 block of their choice, without a card, from a style still in the supply.", "Opening: 1 block of your choice each"),
+        R("R-02", "4",    "Each action happens only in its own phase: opening placement, then flip in Event, draw in Draw, place in Build, shake in Shake.", "Each action only in its own phase"),
+        R("R-03", "4",    "Only the first player flips the event card, and only once per round.", "Only the first player flips the event"),
+        R("R-04", "4, 5", "Each player draws exactly 1 block card per round.", "Draw exactly 1 block card per round"),
+        R("R-05", "7",    "If the block deck has fewer cards than players, nobody draws or places this round.", "Deck too small: nobody draws or places"),
+        R("R-06", "3, 4", "Players place in turn order, clockwise from the first player, only on their own turn. The tallest player is the first player in round 1; after every round the first player passes clockwise. In the Unity build the names are entered clockwise at setup.", "Place clockwise from the first player"),
+        R("R-07", "5",    "In the Build phase you may place only the block style shown on your block card, and only while one of that style is left in the supply.", "Place only the style on your card"),
+        R("R-08", "4, 5", "Each player places exactly 1 block per round (event card 17: the last player places a second block).", "1 placement per round (card 17: +1)"),
+        R("R-09", "5",    "Blocks go on the one shared tower base: on its 16 spaces or on top of blocks there. Every part of the block must be over the 16 spaces; nothing may hang off the base.", "Place on one of the 16 shared spaces"),
+        R("R-10", "5",    "Event card 6 (Union Rep Visits): every block this round must go on top of another block.", "Event 6: must go on top of a block"),
+        R("R-11", "5",    "Event card 11 (Crane Swings Overhead): no part of a block may go on a Center Hub space this round.", "Event 11: no Center Hub this round"),
+        R("R-12", "5",    "Event card 7 (Scaffolding Creaks): your block must touch the grid edge (at least one part over an outer space).", "Event 7: must use a grid-edge space"),
+        R("R-13", "5, 7", "Event card 4 (Coffee Break): everyone skips placing. Event card 18 (Gas Line Scare): no draws, placements or shake.", "Event 4: skip. Event 18: full pause"),
+        R("R-14", "4",    "The shake starts only after every player has placed or skipped.", "Shake only after everyone has placed"),
+        R("R-15", "4",    "Only the first player runs the shake.", "Only the first player shakes"),
+        R("R-16", "1, 4", "When the tower collapses (at least half of its blocks, and at least 2, came down in one placement or shake), the player who placed the most recent block loses; every other player scores 1 point.", "Tower collapses: last placer loses, rest +1"),
+        R("R-17", "5",    "Event card 12 (Wind Picks Up): no part of a block may go on a Corner Zone space this round.", "Event 12: no Corner Zone this round"),
+        R("R-18", "1, 7", "The match ends when a player has 3 points; players who reach 3 together share the win.", "First to 3 points wins"),
+        R("R-19", "7",    "If the block deck ran short, rounds continue with only Event, Shake and Check until the tower collapses. Each of these shake-only rounds shakes harder than the last.", "Deck short: harder shakes until it collapses"),
+        R("R-20", "6",    "Event card 20 (Inspector's Final Walk-Through): if the tower falls this round, the loser also loses 1 point.", "Event 20: loser loses 1 point"),
+        R("R-21", "Event deck", "Event card 1 (Site Inspector): on your turn you may redraw your block card once. Event card 13 (Permit Renewed): each player draws 2 block cards and places one of them.", "Events 1, 13: redraw / extra option"),
+        R("R-22", "Event deck", "Event card 9 (Second Crew Arrives): before anyone places, the first player picks a rival, who redraws their block card.", "Event 9: first player picks a rival"),
+        R("R-23", "Event deck", "Shake events: cards 5, 10 and 19 shake the tower twice this round; card 15 runs the motor at double speed; card 16 shakes twice before any new placement.", "Events 5, 10, 15, 16, 19: shakes"),
+        R("R-24", "Event deck", "Event card 14 (Foreman Tightens the Schedule): place within a ten-count, or skip your placement.", "Event 14: place within 10 seconds"),
+        R("R-25", "Event deck", "Event card 3 (Rebar Delivery): every block this round is placed blind.", "Event 3: place blind"),
     };
 
-    // Rules from the rulesheet the build does not check, and why (the assignment asks us to say so).
+    static Rule R(string id, string section, string text, string brief)
+    {
+        return new Rule { id = id, section = section, text = text, brief = brief };
+    }
+
+    // Rules from the rulesheet the build does not check, and why.
     public static readonly string[] NotChecked =
     {
-        "Collapse itself (sections 4, 8): a tower collapses on the real shake board; the build records it when the table marks it in the Check phase.",
-        "Fallen blocks set aside (section 7): blocks that fall without a collapse are a physical event the build cannot see.",
-        "Never touch another player's tower; knocked blocks put back (sections 5, 7): physical, and the put-back rule is still [confirm].",
-        "Turning a block to any angle; placement final once you let go (section 5): physical hand actions.",
-        "Negotiate the tallest tower (section 5, cards 6 and 17): the table decides by eye; the fallback is still [confirm].",
-        "Event cards 3, 12, 14 and the shake modifiers (cards 5, 10, 15, 16, 17, 19): blind placement, wind, a ten-count and motor speed are physical.",
+        "Who is tallest (section 3): measured at the table. The Unity build makes the first name entered the first player and seats the rest clockwise in the order entered.",
+        "Event card 14's ten-count and event card 3's blind placement are timed and hidden on screen in the Unity build, but at the table they rely on the players.",
+        "A collapse on the real tower base is judged by eye; the Unity build counts it as half of the blocks (at least 2) coming down in one placement or shake.",
     };
-
-    // One short line per rule, for the on-screen panel (full wording stays in All and on the rulesheet).
-    static readonly string[] Brief =
-    {
-        "Out players don't flip, draw or place",
-        "Each action only in its own phase",
-        "Only the first player flips the event, once",
-        "Draw exactly 1 block card per round",
-        "Deck too small: nobody draws or places",
-        "Place clockwise, only on your turn",
-        "Place only the style on your card",
-        "Exactly 1 placement per round",
-        "Place only on your own tower base",
-        "Place on one of the 16 spaces",
-        "Event 11: no Center Hub this round",
-        "Event 7: must use a grid-edge space",
-        "Event 4: skip placing. Event 18: full pause",
-        "Shake only after everyone has placed",
-        "First player shakes (an out player if any)",
-        "1 or 0 towers left: game over, +1 point",
-        "Tie: most blocks before the shake wins",
-        "First to 3 point markers wins the match",
-        "Deck ran short: most blocks wins",
-        "First player passes clockwise",
-    };
-
-    public static string DescribeShort()
-    {
-        StringBuilder sb = new StringBuilder();
-        sb.AppendLine("<b>RULES CHECKED</b>");
-        for (int i = 0; i < All.Count; i++)
-            sb.AppendLine("<b>" + All[i].id + "</b>  " + (i < Brief.Length ? Brief[i] : All[i].text));
-        sb.AppendLine();
-        sb.AppendLine("<b>NOT CHECKED</b> (physical): collapse, fallen blocks,");
-        sb.AppendLine("touching towers, angle, tallest by eye,");
-        sb.AppendLine("event cards 3, 12, 14 and shake speed.");
-        return sb.ToString();
-    }
 
     public static Rule Get(string id)
     {
         foreach (Rule r in All) if (r.id == id) return r;
-        return new Rule { id = id, section = "?", text = "(unknown rule)" };
+        return new Rule { id = id, section = "?", text = "(unknown rule)", brief = "" };
     }
 
     public static string Describe()
     {
         StringBuilder sb = new StringBuilder();
         sb.AppendLine("<b>RULES CHECKED BY THE BUILD</b>  (rulesheet section in brackets)");
-        foreach (Rule r in All) sb.AppendLine("<b>" + r.id + "</b>  " + r.text + "  <color=#888>[" + r.section + "]</color>");
+        foreach (Rule r in All) sb.AppendLine("<b>" + r.id + "</b>  " + r.text + "  [" + r.section + "]");
         sb.AppendLine();
         sb.AppendLine("<b>NOT CHECKED, AND WHY</b>");
         foreach (string n in NotChecked) sb.AppendLine("- " + n);
+        return sb.ToString();
+    }
+
+    public static string DescribeShort()
+    {
+        StringBuilder sb = new StringBuilder();
+        sb.AppendLine("<b>RULES CHECKED</b>");
+        foreach (Rule r in All) sb.AppendLine("<b>" + r.id + "</b>  " + r.brief);
+        sb.AppendLine();
+        sb.AppendLine("<b>NOT CHECKED</b> (physical): whether the tower fell,");
+        sb.AppendLine("fallen blocks, angle, who is tallest,");
+        sb.AppendLine("event cards 3, 14 and shake speed.");
         return sb.ToString();
     }
 }

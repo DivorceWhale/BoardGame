@@ -1,0 +1,59 @@
+## How to Play
+<b>Goal:</b> build one tower together. When it collapses, whoever placed the last block loses that game and everyone else scores 1 point. <b>First to 3 points wins.</b>
+
+<b>Start of every game:</b> each player places 1 block of their choice. Pick it from the bar at the bottom of the screen.
+
+<b>Each round</b>
+1. <b>Event</b> - the first player draws an event card. It changes something this round. To see what every event card does, press <b>Cards (C)</b>.
+2. <b>Draw</b> - everyone draws a block card. That is the block you place.
+3. <b>Build</b> - take turns placing your block on the tower.
+4. <b>Shake</b> - the first player starts the shake.
+5. <b>Check</b> - if the tower collapsed, the game is over. If not, the next player clockwise becomes the first player and a new round starts.
+
+The top of the screen always says whose turn it is and what to do.
+
+## Placing Blocks
+- Place the block shown on your card.
+- Put it on the tower base, or on top of other blocks.
+- No part of it may hang off the base.
+- You can slide it into a gap under a block that sticks out.
+- Once it is placed, it stays.
+
+The preview is <color=#2e9e44>green</color> where you can place it and <color=#c0392b>red</color> where you can't. The top of the screen says why.
+
+## Controls
+Mouse - aim
+A / D - turn left or right
+W / S - tip up or down
+Q / E - slide under a block, or back on top
+Left click - place the block
+Right-drag - look around
+Scroll - zoom
+C - see every card
+H - open or close this help
+
+## Winning
+<b>The tower collapses</b> once half of the blocks it had at its tallest this game have come down (at least 2). It counts over the whole game, so a tower that loses a block or two at a time collapses too.
+A block has come down if it fell off the base, or dropped half a block or more.
+- If it collapses while you are placing, <b>you lose</b> that game.
+- If it collapses during the shake, whoever placed the <b>last block</b> loses.
+- Everyone else scores <b>1 point</b>.
+
+Until then the game goes on. Blocks that fall off are set aside, and they count toward the collapse.
+
+<b>First to 3 points wins the match.</b> If several players reach 3 at the same time, they share the win.
+
+## Edge Cases
+<b>Can't place?</b> If the event card leaves nowhere legal for your block, tells you to skip (cards 4 and 18), or none of your block style is left, you skip your placement. Your block card is discarded.
+
+<b>Some blocks fell, but not half?</b> The tower is still standing and the game goes on. Blocks that fell off the base are set aside until the game ends. They don't go back on the tower or into the supply, and they still count toward the collapse.
+
+<b>Who placed last?</b> Whoever put the most recent block on the tower, counting earlier rounds. If nobody placed this round (cards 4 and 18) and the tower collapses in the shake, the player who placed the last block before that loses.
+
+<b>Out of block cards?</b> Block cards are never reshuffled during a game. When there are fewer block cards than players, nobody draws or places. Each round is just the event and the shake, and each shake is stronger than the last, until the tower collapses. The first player still moves clockwise every round.
+
+<b>Out of event cards?</b> The used event cards are shuffled into a new deck.
+
+<b>Several players reach 3 points at once?</b> They share the match win.
+
+<b>Event card or rules?</b> If an event card disagrees with the rules, the card wins for that round.

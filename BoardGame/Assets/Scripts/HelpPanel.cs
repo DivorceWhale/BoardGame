@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -30,8 +31,16 @@ public class HelpPanel : MonoBehaviour
     void Update()
     {
 #if ENABLE_INPUT_SYSTEM
+        if (Typing()) return;   // don't toggle while someone is typing a name into a text field
         if (Keyboard.current != null && Keyboard.current[toggleKey].wasPressedThisFrame) Toggle();
 #endif
+    }
+
+    static bool Typing()
+    {
+        GameObject sel = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        TMP_InputField field = sel != null ? sel.GetComponent<TMP_InputField>() : null;
+        return field != null && field.isFocused;
     }
 
     public void Toggle()

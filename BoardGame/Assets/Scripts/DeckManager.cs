@@ -35,6 +35,9 @@ public class DeckManager : MonoBehaviour
     [Tooltip("Off = used cards never return to the draw pile (no refills).")]
     public bool allowRefill = true;
 
+    public int DrawPileCount { get { EnsureSetup(); return drawPile.Count; } }
+    public int DiscardPileCount { get { EnsureSetup(); return discardPile.Count; } }
+
     public int TotalAvailable
     {
         get

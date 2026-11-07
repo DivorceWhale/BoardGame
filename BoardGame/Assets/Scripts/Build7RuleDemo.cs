@@ -15,7 +15,7 @@ using UnityEngine.InputSystem;
 public class Build7RuleDemo : MonoBehaviour
 {
     public ScenarioConfig scenario;        // supplies the decks and 3 players
-    public BoardLayout towerBase;          // 4x4 layout used for each player's own tower base
+    public BoardLayout towerBase;          // the one shared 4x4 tower base (rulesheet v2)
     public CardData lightTremor;           // event card 2, the event face up in the replay
 
     TurnStateMachine machine;
@@ -54,19 +54,36 @@ public class Build7RuleDemo : MonoBehaviour
         machine.Log += m => Add(m);
         s = machine.State;
         s.useRulesheet = true;     // every action now goes through RuleCheck
-        s.ownBases = true;         // rulesheet section 2: each player builds on their own 4x4 tower base
+        s.ownBases = false;        // rulesheet v2: one shared tower on one tower base
         s.board = towerBase;
-        s.activePlayer = 0;
-        s.phase = TurnPhase.Event;
+        s.players[0].name = "Player 1 (tallest)";
+        s.players[1].name = "Player 2";
+        s.players[2].name = "Player 3 (shortest)";
+        s.turnOrder = new List<int> { 0, 1, 2 };   // section 3: tallest to shortest
+        machine.BeginOpening();
 
         steps.Clear();
-        Step("Round 1 begins. Player 1 is the first player. Player 2 reaches for the event deck.",
-            () => Try(Act(ActionType.DrawEventCard, 1)));
-        Step("Event card 2 (Light Tremor) is flipped by Player 1: no effect this round. Draw phase.",
-            () => { s.eventCard = lightTremor; s.eventDrawn = true; s.phase = TurnPhase.Draw; });
-        Step("Player 1 draws a block card.", () => Try(Act(ActionType.DrawBlockCard, 0)));
-        Step("Player 1 tries to draw a second block card.", () => Try(Act(ActionType.DrawBlockCard, 0)));
-        Step("Players 2 and 3 draw. Build phase: Player 1 places first.", () =>
+        Step("Opening placement (section 3): tallest to shortest, 1 block of your choice each. Player 2 reaches in first.",
+            () => Try(Open(1, "L-Block", 6)));
+        Step("Player 1, the tallest, picks The Cube and places it on space 6.",
+            () => { Try(Open(0, "The Cube", 6)); s.buildTurn = 1; });
+        Step("Player 1 tries to add a second opening block.", () => Try(Open(0, "T-Block", 7)));
+        Step("Players 2 and 3 make their opening placements. Round 1 begins.", () =>
+        {
+            Try(Open(1, "L-Block", 7)); s.buildTurn = 2;
+            Try(Open(2, "Z-Block", 10));
+            s.buildTurn = -1;
+            s.phase = TurnPhase.Event;
+        });
+        Step("Player 3 reaches for the event deck.", () => Try(Act(ActionType.DrawEventCard, 2)));
+        Step("Player 1 flips event card 11 (Crane Swings Overhead): no block on a Center Hub this round. Draw phase.",
+            () => { s.eventCard = EventById("11"); s.eventDrawn = true; s.phase = TurnPhase.Draw; });
+        Step("Player 1 draws a block card, then tries to draw a second.", () =>
+        {
+            Try(Act(ActionType.DrawBlockCard, 0));
+            Try(Act(ActionType.DrawBlockCard, 0));
+        });
+        Step("Players 2 and 3 draw. Build phase: tallest first.", () =>
         {
             Try(Act(ActionType.DrawBlockCard, 1));
             Try(Act(ActionType.DrawBlockCard, 2));
@@ -74,30 +91,23 @@ public class Build7RuleDemo : MonoBehaviour
             s.buildTurn = 0;
         });
         Step("Option list for Player 1 (path 1: the legal-move function).", () => Options(0));
-        Step("Player 2 tries to place before it is their turn.", () => Try(Place(1, 1, 6)));
-        Step("Player 1 tries to place on Player 2's tower base.", () => Try(Place(0, 1, 6)));
-        Step("Player 1 places on space 6 of their own tower base.", () => { Try(Place(0, 0, 6)); s.buildTurn = 1; });
-        Step("STRANGER TEST #2: \"When does your tower first shake?\" The testers shook as soon as one tower had a block. Option list for Player 1 first:",
+        Step("Player 1 tries space 6, a Center Hub, directly (path 2: a direct attempt).", () => Try(Place(0, 6)));
+        Step("Player 1 places on space 1 instead.", () => { Try(Place(0, 1)); s.buildTurn = 1; });
+        Step("STRANGER TEST #2: \"When does the tower first shake?\" The testers shook as soon as one block was down. Option list for Player 1:",
             () => Options(0));
         Step("...and the direct attempt: Player 1 tries to start the shake now.", () => Try(Act(ActionType.StartShake, 0)));
-        Step("Players 2 and 3 place. Every standing player has placed: Shake phase.", () =>
+        Step("Player 3 tries to place before Player 2.", () => Try(Place(2, 4)));
+        Step("Players 2 and 3 place. Every player has placed: Shake phase.", () =>
         {
-            Try(Place(1, 1, 1)); s.buildTurn = 2;
-            Try(Place(2, 2, 16));
+            Try(Place(1, 2)); s.buildTurn = 2;
+            Try(Place(2, 16));
             s.buildTurn = -1;
             s.phase = TurnPhase.Shake;
         });
-        Step("Player 2 tries to run the shake.", () => Try(Act(ActionType.StartShake, 1)));
+        Step("Player 3 tries to run the shake.", () => Try(Act(ActionType.StartShake, 2)));
         Step("Player 1, the first player, runs the shake (motor 5 seconds).", () => Try(Act(ActionType.StartShake, 0)));
-        Step("STRANGER TEST #1: \"What if the towers fail? Is it a tie?\" Later in the game Player 3 is out, and Players 1 and 2 both collapse in the same shake with 4 blocks each.", () =>
-        {
-            foreach (PlayerState p in s.players) p.inGame = false;
-            s.players[0].fellThisShake = true; s.players[0].blocksBeforeShake = 4;
-            s.players[1].fellThisShake = true; s.players[1].blocksBeforeShake = 4;
-            s.players[2].fellThisShake = false;
-            s.phase = TurnPhase.EndCheck;
-            machine.StepPhase();
-        });
+        Step("STRANGER TEST #1: \"If the tower fails, is it a tie?\" The table marks the tower as fallen after this shake.",
+            () => machine.ResolveTowerFall());
         Step("Replay finished. Press Restart to run it again.", () => { });
 
         Add("<b>Build 7 - rule checks replay of the October 29 playtest.</b> Press <b>Next step</b> or Space.");
@@ -141,8 +151,31 @@ public class Build7RuleDemo : MonoBehaviour
 
     GameAction Act(ActionType t, int player) { return new GameAction { type = t, player = player }; }
 
-    GameAction Place(int player, int baseOwner, int space)
+    CardData Style(string title)
     {
+        foreach (DeckEntry e in scenario.blockDeck) if (e.card != null && e.card.title == title) return e.card;
+        return null;
+    }
+
+    CardData EventById(string id)
+    {
+        foreach (DeckEntry e in scenario.eventDeck) if (e.card != null && e.card.id == id) return e.card;
+        return lightTremor;
+    }
+
+    GameAction Open(int player, string style, int space)
+    {
+        SpaceData sd = towerBase.Get(space);
+        return new GameAction
+        {
+            type = ActionType.PlaceBlock, player = player, card = Style(style),
+            space = space, spaceName = sd != null ? sd.displayName : "?"
+        };
+    }
+
+    GameAction Place(int player, int space)
+    {
+        int baseOwner = 0;   // one shared tower base
         SpaceData sd = towerBase.Get(space);
         return new GameAction
         {
@@ -162,7 +195,7 @@ public class Build7RuleDemo : MonoBehaviour
             case ActionType.DrawEventCard: return "flips the event card.";
             case ActionType.DrawBlockCard: return "draws a block card.";
             case ActionType.StartShake: return "starts the shake.";
-            default: return "places " + (a.card != null ? a.card.title : "?") + " on space " + a.space + " (" + a.spaceName + ") of their own base.";
+            default: return "places " + (a.card != null ? a.card.title : "?") + " on space " + a.space + " (" + a.spaceName + ") of the tower.";
         }
     }
 

@@ -105,7 +105,7 @@ public class Build7RuleDemo : MonoBehaviour
             s.phase = TurnPhase.Shake;
         });
         Step("Player 3 tries to run the shake.", () => Try(Act(ActionType.StartShake, 2)));
-        Step("Player 1, the first player, runs the shake (motor 5 seconds).", () => Try(Act(ActionType.StartShake, 0)));
+        Step("Player 1, the first player, runs the shake (5 seconds).", () => Try(Act(ActionType.StartShake, 0)));
         Step("STRANGER TEST #1: \"If the tower fails, is it a tie?\" The table marks the tower as fallen after this shake.",
             () => machine.ResolveTowerFall());
         Step("Replay finished. Press Restart to run it again.", () => { });

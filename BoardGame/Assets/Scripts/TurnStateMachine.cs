@@ -213,7 +213,7 @@ public class TurnStateMachine
         }
     }
 
-    // PLACEHOLDER: the real shake is a physical motor. The chances come from the scenario asset.
+    // PLACEHOLDER: this text-only shake rolls for falls. The chances come from the scenario asset.
     private void DoShake()
     {
         ScenarioConfig sc = State.scenario;
@@ -656,7 +656,7 @@ public class TurnStateMachine
                     if (s.buildTurn < 0)
                     {
                         s.phase = TurnPhase.Shake;
-                        Log("  Shake phase: the first player switches on the motor for " + BalanceConfig.Current.shakeSeconds + " seconds.");
+                        Log("  Shake phase: the first player starts the shake for " + BalanceConfig.Current.shakeSeconds + " seconds.");
                         continue;
                     }
                     PlayerState builder = s.players[s.buildTurn];

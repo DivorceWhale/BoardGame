@@ -37,7 +37,7 @@ public static class RuleBook
         R("R-20", "6",    "Event card 20 (Inspector's Final Walk-Through): if the tower falls this round, the loser also loses 1 point.", "Event 20: loser loses 1 point"),
         R("R-21", "Event deck", "Event card 1 (Site Inspector): on your turn you may redraw your block card once. Event card 13 (Permit Renewed): each player draws 2 block cards and places one of them.", "Events 1, 13: redraw / extra option"),
         R("R-22", "Event deck", "Event card 9 (Second Crew Arrives): before anyone places, the first player picks a rival, who redraws their block card.", "Event 9: first player picks a rival"),
-        R("R-23", "Event deck", "Shake events: cards 5, 10 and 19 shake the tower twice this round; card 15 runs the motor at double speed; card 16 shakes twice before any new placement.", "Events 5, 10, 15, 16, 19: shakes"),
+        R("R-23", "Event deck", "Shake events: cards 5, 10 and 19 shake the tower twice this round; card 15 runs the shake at double speed; card 16 shakes twice before any new placement.", "Events 5, 10, 15, 16, 19: shakes"),
         R("R-24", "Event deck", "Event card 14 (Foreman Tightens the Schedule): place within a ten-count, or skip your placement.", "Event 14: place within 10 seconds"),
         R("R-25", "Event deck", "Event card 3 (Rebar Delivery): every block this round is placed blind.", "Event 3: place blind"),
     };

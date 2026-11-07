@@ -341,7 +341,7 @@ public partial class QuakerPlay : MonoBehaviour
         if (shaking)
         {
             // The board moves side to side and front to back at slightly different rates, so it wanders in
-            // a figure-of-eight. Each axis peaks at shakeStrength x gravity. Event 15 (double speed) runs the motor
+            // a figure-of-eight. Each axis peaks at shakeStrength x gravity. Event 15 (double speed) runs the shake
             // twice as fast, which shakes twice as hard.
             float t = Time.time - shakeStartedAt;
             float wx = 2f * Mathf.PI * shakeHz * shakeSpeed, wz = wx * 0.8f;
@@ -532,7 +532,7 @@ public partial class QuakerPlay : MonoBehaviour
             Add("  R-23: " + (count > 1 ? "the board shakes " + count + " times" : "the board shakes") + (shakeSpeed > 1f ? " at double speed" : "") + ".");
 
         busy = true;
-        Dictionary<Rigidbody, float> before = TowerSnapshot(null);   // the tower as it stood before the motor started
+        Dictionary<Rigidbody, float> before = TowerSnapshot(null);   // the tower as it stood before the shake started
         for (shakeNumber = 1; shakeNumber <= count; shakeNumber++)
         {
             shaking = true;
@@ -1217,7 +1217,7 @@ public partial class QuakerPlay : MonoBehaviour
                 if (ev == 3) extra += " <b>Blind:</b> you can't see the tower or your block.";
                 return name + ": place " + YourBlock(p.heldBlock, "<b>", "</b>") + " on the tower." + extra + controls;
             case TurnPhase.Shake:
-                return name + ": switch on the tower base's motor for " + shakeSeconds + " seconds." + (s.deckShort
+                return name + ": start the shake. The board shakes for " + shakeSeconds + " seconds." + (s.deckShort
                     ? "\n<color=#ffb060>Block deck short: shake-only round " + ShakeOnlyNumber() + ", so the board shakes harder ("
                       + Mathf.RoundToInt(ShakeOnlyStrength(ShakeOnlyNumber()) / shakeStrength * 100f) + "% of a normal shake). If the tower collapses, "
                       + (s.lastPlacer >= 0 ? s.players[s.lastPlacer].name : "the last placer") + " placed the most recent block and loses.</color>" : "");

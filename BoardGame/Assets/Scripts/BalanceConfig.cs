@@ -34,14 +34,14 @@ public class BalanceConfig : ScriptableObject
     [Tooltip("Copies of each event card in the event deck. (Block cards: set copies on each block card asset.)")]
     [Min(1)] public int eventCardCopies = 1;
 
-    [Header("Shake (the tower base's motor and dial)")]
-    [Tooltip("Seconds the motor runs for each shake.")]
+    [Header("Shake")]
+    [Tooltip("Seconds each shake lasts.")]
     [Min(0.5f)] public float shakeSeconds = 5f;
-    [Tooltip("The dial: peak acceleration as a fraction of gravity. Block friction holds up to about 0.6.")]
+    [Tooltip("Shake strength: peak acceleration as a fraction of gravity. Block friction holds up to about 0.6.")]
     [Range(0.05f, 1.5f)] public float shakeStrength = 0.6f;
     [Tooltip("Back-and-forth movements per second.")]
     [Range(0.5f, 8f)] public float shakeHz = 2.5f;
-    [Tooltip("Seconds for the motor to speed up at the start and slow down at the end of each shake.")]
+    [Tooltip("Seconds for each shake to build up at the start and die down at the end.")]
     [Min(0f)] public float shakeRamp = 0.5f;
     [Tooltip("Block deck short (shake-only rounds): each of those rounds adds this much to the shake strength.")]
     [Range(0f, 0.5f)] public float shakeOnlyStep = 0.15f;
@@ -51,7 +51,7 @@ public class BalanceConfig : ScriptableObject
     [Header("Event card effects")]
     [Tooltip("Events 5, 10 and 19: how many times the tower shakes that round.")]
     [Min(1)] public int doubleShakeCount = 2;
-    [Tooltip("Event 15: how much faster the motor runs.")]
+    [Tooltip("Event 15: how much faster the shake runs.")]
     [Min(1f)] public float fastShakeSpeed = 2f;
     [Tooltip("Event 16 (aftershocks): shakes before anyone places.")]
     [Min(1)] public int aftershockShakes = 2;

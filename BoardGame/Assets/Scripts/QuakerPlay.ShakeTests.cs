@@ -124,7 +124,7 @@ public partial class QuakerPlay
         List<int> deck = new List<int>();
         for (int k = 0; k < blockStyles.Count; k++)
         {
-            supply[k] = blockStyles[k].copies > 0 ? blockStyles[k].copies : 5;
+            supply[k] = blockStyles[k].copies;   // copies live on each block card
             for (int n = 0; n < supply[k]; n++) deck.Add(k);
         }
         for (int i = deck.Count - 1; i > 0; i--) { int j = rnd.Next(i + 1); int t = deck[i]; deck[i] = deck[j]; deck[j] = t; }
@@ -199,7 +199,7 @@ public partial class QuakerPlay
             int before = placed.Count;
             float h = TowerHeight();
             shakeExtra = deckShort ? ShakeOnlyStrength(shakeOnly) - shakeStrength : 0f;   // same escalation as the game
-            yield return TestShake(ev == 19 ? 2 : 1, ev == 15 ? 2f : 1f, fell);
+            yield return TestShake(ev == 5 || ev == 10 || ev == 19 ? B.doubleShakeCount : 1, ev == 15 ? B.fastShakeSpeed : 1f, fell);   // same values as the game
             shakeExtra = 0f;
             r.fellShaking += fell[0];
             if (fell[0] > 0) r.fallsByRound.Add("round " + round + ": " + fell[0]);

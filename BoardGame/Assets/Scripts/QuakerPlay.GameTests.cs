@@ -433,8 +433,8 @@ public partial class QuakerPlay
             yield return null;
             if (!overPanel.activeSelf) Conflict("the match-over screen did not appear");
             List<string> winners = new List<string>();
-            foreach (PlayerState p in s.players) if (p.matchPoints >= 3) winners.Add(p.name);
-            if (winners.Count == 0) Conflict("the match ended but nobody has 3 points");
+            foreach (PlayerState p in s.players) if (p.matchPoints >= rules.pointsToWinMatch) winners.Add(p.name);
+            if (winners.Count == 0) Conflict("the match ended but nobody has " + rules.pointsToWinMatch + " points");
             if (winners.Count > 1) Cover("shared match win");
             result = "match won by " + string.Join(" and ", winners.ToArray()) + " after " + (games + 1) + " game(s), " + rounds + " round(s)";
         }

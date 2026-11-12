@@ -233,15 +233,17 @@ public partial class QuakerPlay
             // unless the tower fell from the opening placement before any round got going (then nobody moves).
             if (s.phase == TurnPhase.Event && (s.roundInGame != lastRound || s.gameNumber != lastGame))
             {
-                bool roundUnderway = machine.RoundsUnderway != roundsUnderwayAtLastEvent;
+                int roundsSince = machine.RoundsUnderway - roundsUnderwayAtLastEvent;   // shake-only rounds have no Event phase
+                bool roundUnderway = roundsSince > 0;
                 roundsUnderwayAtLastEvent = machine.RoundsUnderway;
                 if (orderAtLastEvent != null && sawEventPhase)
                 {
                     List<int> expected = new List<int>(orderAtLastEvent);
-                    if (roundUnderway) { expected.Add(expected[0]); expected.RemoveAt(0); }
+                    for (int k = 0; k < roundsSince % Mathf.Max(1, expected.Count); k++) { expected.Add(expected[0]); expected.RemoveAt(0); }
+                    if (roundsSince > 1) Cover("shake-only rounds skip the event card");
                     if (string.Join(",", expected) != string.Join(",", s.turnOrder))
                         Conflict(roundUnderway
-                            ? "first player did not move one seat clockwise: was " + string.Join(",", orderAtLastEvent) + ", now " + string.Join(",", s.turnOrder)
+                            ? "first player did not move one seat clockwise per round (" + roundsSince + " rounds): was " + string.Join(",", orderAtLastEvent) + ", now " + string.Join(",", s.turnOrder)
                             : "the tower fell from the opening placement but the first player moved: was " + string.Join(",", orderAtLastEvent) + ", now " + string.Join(",", s.turnOrder));
                     else Cover(roundUnderway ? "first player rotated" : "opening collapse keeps first player");
                 }
@@ -296,6 +298,14 @@ public partial class QuakerPlay
                             if (s.tower.Count != tower0) Conflict("Gas Line Scare: blocks were placed in the skipped round");
                             else if (waited >= 900) Conflict("Gas Line Scare: the round never ended");
                             else Cover("gas line round skipped");
+                        }
+                        if (ev == 4 && !s.deckShort)
+                        {
+                            // Coffee Break: the build draws (and later discards) for everyone, so nobody clicks Draw Block.
+                            bool allDrew = true;
+                            foreach (PlayerState pl in s.players) if (!pl.drewThisRound) allDrew = false;
+                            if (s.phase == TurnPhase.Draw || !allDrew) Conflict("Coffee Break: the players' draws were not done for them");
+                            else Cover("coffee break auto draw");
                         }
                     }
                     break;
@@ -536,6 +546,19 @@ public partial class QuakerPlay
                         actions.Add(a);
                     }
                 }
+        }
+        if (options.Count == 0 && s.phase == TurnPhase.Place)
+        {
+            // R-26: the game itself has to notice the block fits nowhere and redraw (or skip) for the player.
+            string before = s.players[who].heldBlock != null ? s.players[who].heldBlock.title : "none";
+            deadCheckKey = "";
+            if (CheckDeadCard())
+            {
+                gtNotes.Add(gtName + ": R-26, " + s.players[who].name + "'s " + style.title + " fit nowhere; the game handled it ("
+                    + before + " -> " + (s.players[who].heldBlock != null ? s.players[who].heldBlock.title : "skipped") + ")");
+                Cover("dead card redrawn");
+                return false;
+            }
         }
         if (options.Count == 0)
         {

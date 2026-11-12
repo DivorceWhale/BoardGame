@@ -196,6 +196,7 @@ public partial class QuakerPlay
     {
         if (menuPlay != null) menuPlay.onClick.AddListener(() => { if (menuScene) LoadScene(gameSceneName); else ShowSetup(); });
         if (menuHowTo != null) menuHowTo.onClick.AddListener(() => TogglePanel("HelpToggle"));
+        if (menuScene) AddInGameRulesNote();
         if (menuCards != null) menuCards.onClick.AddListener(() => TogglePanel("CardsToggle"));
         if (menuQuit != null) menuQuit.onClick.AddListener(QuitGame);
         if (setupBack != null) setupBack.onClick.AddListener(() => { if (menuScene) ShowStartMenu(); else LoadScene(menuSceneName); });

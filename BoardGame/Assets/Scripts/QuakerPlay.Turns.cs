@@ -39,6 +39,7 @@ public partial class QuakerPlay
     readonly List<BannerMsg> bannerQueue = new List<BannerMsg>();
     CardData bannerEvent;          // the last event card announced
     string coffeeKey = "";         // the round Coffee Break's "nobody places" banner was shown for
+    string shakeOnlyKey = "";      // the shake-only round whose banner was shown
     static readonly Color EventGold = new Color(1f, 0.82f, 0.35f);
     float bannerShownAt = -10f;
     const float BannerSeconds = 2f;
@@ -241,6 +242,7 @@ public partial class QuakerPlay
         bannerQueue.Clear();
         bannerEvent = null;
         coffeeKey = "";
+        shakeOnlyKey = "";
         readyConfirmed = "";
     }
 
@@ -291,7 +293,18 @@ public partial class QuakerPlay
             if (RuleCheck.EventNumber(s) == 4 && (s.phase == TurnPhase.Shake || s.phase == TurnPhase.CollapseCheck))
             {
                 string k = s.gameNumber + ":" + s.roundInGame;
-                if (k != coffeeKey) { coffeeKey = k; QueueBanner("Coffee Break", "Nobody places this round. On to the shake.", EventGold); }
+                if (k != coffeeKey)
+                {
+                    coffeeKey = k;
+                    QueueBanner("Coffee Break", (coffeeDrawn > 0 ? "Everyone drew and discarded a block card. " : "") + "Nobody places this round. On to the shake.", EventGold);
+                    coffeeDrawn = 0;
+                }
+            }
+            // R-19: a shake-only round has no event card, so say why nobody flips one.
+            if (s.deckShort && s.eventCard == null && (s.phase == TurnPhase.Shake || s.phase == TurnPhase.CollapseCheck))
+            {
+                string k = s.gameNumber + ":" + s.roundInGame;
+                if (k != shakeOnlyKey) { shakeOnlyKey = k; QueueBanner("Shake-only round", "The block deck is short: no event card, no drawing, no placing. Each shake is stronger.", EventGold); }
             }
             // Turn banner: when the acting player changes, or the same player moves on to placing (after picking a
             // rival or running the aftershocks) or to the Structural Audit second draw.
@@ -409,6 +422,7 @@ public partial class QuakerPlay
         if (bannerQueue.Count == 0) bannerShownAt = Time.time;
         if (bannerQueue.Count >= 4) bannerQueue.RemoveAt(1);   // never fall far behind the game
         bannerQueue.Add(new BannerMsg { title = title, sub = sub, color = color });
+        GameSounds.Play(GameSound.TurnBanner, 0.6f);
     }
 
     // Shows the front of the queue for BannerSeconds, fading in and out, then moves on to the next.
@@ -424,16 +438,76 @@ public partial class QuakerPlay
         if (turnBanner.activeSelf != show) turnBanner.SetActive(show);
         if (!show) return;
         BannerMsg m = bannerQueue[0];
+        bool changed = (bannerName != null && bannerName.text != m.title) || (bannerAction != null && bannerAction.text != m.sub);
         if (bannerName != null && bannerName.text != m.title) bannerName.text = m.title;
         if (bannerName != null) bannerName.color = m.color;
         if (bannerAction != null && bannerAction.text != m.sub) bannerAction.text = m.sub;
+        if (changed) FitBanner();
         float t = Time.time - bannerShownAt;
         turnBanner.GetComponent<CanvasGroup>().alpha = t < 0.15f ? t / 0.15f : t > BannerSeconds - 0.4f ? Mathf.Max(0f, (BannerSeconds - t) / 0.4f) : 1f;
+    }
+
+    // Sizes the banner to its text so nothing spills out: the title shrinks to fit one line (down to BannerTitleMin),
+    // and the line under it wraps onto up to three lines, shrinking a little if it still needs more room.
+    // The box then grows or shrinks around both.
+    const float BannerWidth = 860f, BannerPad = 20f, BannerTitleHeight = 72f, BannerTitleMin = 30f;
+    const float BannerSubSize = 26f, BannerSubMin = 18f, BannerSubMaxHeight = 110f;
+
+    void FitBanner()
+    {
+        if (turnBanner == null || bannerName == null || bannerAction == null) return;
+        float inner = BannerWidth - 2f * BannerPad;
+
+        bannerName.textWrappingMode = TextWrappingModes.NoWrap;
+        bannerName.enableAutoSizing = true;
+        bannerName.fontSizeMax = 58f;
+        bannerName.fontSizeMin = BannerTitleMin;
+        bannerName.overflowMode = TextOverflowModes.Ellipsis;   // only if even the smallest size is too wide
+
+        bannerAction.textWrappingMode = TextWrappingModes.Normal;
+        bannerAction.enableAutoSizing = false;
+        bannerAction.fontSize = BannerSubSize;
+        bannerAction.overflowMode = TextOverflowModes.Overflow;
+        float subHeight = 0f;
+        if (!string.IsNullOrEmpty(bannerAction.text))
+        {
+            bannerAction.gameObject.SetActive(true);
+            subHeight = bannerAction.GetPreferredValues(bannerAction.text, inner, 0f).y;
+            if (subHeight > BannerSubMaxHeight)
+            {
+                // Too long for three lines: let it shrink into the space it has.
+                bannerAction.enableAutoSizing = true;
+                bannerAction.fontSizeMax = BannerSubSize;
+                bannerAction.fontSizeMin = BannerSubMin;
+                bannerAction.overflowMode = TextOverflowModes.Ellipsis;
+                subHeight = BannerSubMaxHeight;
+            }
+        }
+
+        float height = BannerPad + BannerTitleHeight + (subHeight > 0f ? 6f + subHeight : 0f) + BannerPad;
+        RectTransform box = (RectTransform)turnBanner.transform;
+        box.sizeDelta = new Vector2(BannerWidth, height);
+        // Auto-size can land a few pixels wide, so the title gets a little less width than the line under it.
+        B6Place(bannerName.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -(BannerPad + BannerTitleHeight * 0.5f)), new Vector2(inner - 20f, BannerTitleHeight));
+        B6Place(bannerAction.rectTransform, new Vector2(0.5f, 1f), new Vector2(0f, -(BannerPad + BannerTitleHeight + 6f + subHeight * 0.5f)), new Vector2(inner, Mathf.Max(subHeight, 1f)));
+        bannerAction.gameObject.SetActive(subHeight > 0f);
     }
 
     // Called after a move is made, for banners about other players: Second Crew Arrives swaps the rival's card.
     void OnActionDone(GameAction a)
     {
+        // Every draw gets its own banner. The last player's draw moves the round straight to placing, and the card
+        // panel then shows the first builder's card, so without this the last drawer never sees what they pulled.
+        if (a.type == ActionType.DrawBlockCard && a.player >= 0 && a.player < s.players.Count)
+        {
+            PlayerState p = s.players[a.player];
+            if (p.heldBlock != null)
+                QueueBanner(p.name + " drew " + ABlock(p.heldBlock) + (p.extraOption != null ? " and " + ABlock(p.extraOption) : ""),
+                    s.phase == TurnPhase.Draw ? "Their block card for this round"
+                    : p.placementsThisRound > 0 ? "Structural Audit: their second block"
+                    : "Everyone has drawn. On to placing.",
+                    PlayerColor(a.player));
+        }
         if (a.type == ActionType.PickRival && a.target >= 0 && a.target < s.players.Count)
         {
             CardData now = s.players[a.target].heldBlock;
@@ -467,6 +541,117 @@ public partial class QuakerPlay
         cb.normalColor = normal;
         cb.selectedColor = normal;
         b.colors = cb;
+    }
+
+    // ---------------- R-26: a block that fits nowhere ----------------
+
+    string deadCheckKey = "";
+
+    // Once per turn (and again whenever the tower or the card changes): if the builder's block has no spot on
+    // the real tower that the rules accept, they discard it and draw again (R-26), or skip if they can't.
+    // Returns true when it changed the card or skipped the turn.
+    bool CheckDeadCard()
+    {
+        if (machine == null || machine.MatchOver || busy || shaking || s.phase != TurnPhase.Place || s.buildTurn < 0) return false;
+        if (RuleCheck.RivalPending(s) || RuleCheck.AftershocksPending(s)) return false;
+        PlayerState p = s.players[s.buildTurn];
+        if (p.heldBlock == null) return false;
+        string key = s.gameNumber + ":" + s.roundInGame + ":" + s.buildTurn + ":" + p.placementsThisRound + ":" + placed.Count + ":" + p.heldBlock.id
+            + ":" + (p.extraOption != null ? p.extraOption.id : 0);
+        if (key == deadCheckKey) return false;
+        deadCheckKey = key;
+        if (HasPhysicalSpot(p.heldBlock, p.index)) return false;
+        if (p.extraOption != null)
+        {
+            // Permit Renewed: the other card counts too. The rules only accept the card in hand, so check it there.
+            CardData held = p.heldBlock;
+            p.heldBlock = p.extraOption; p.extraOption = held;
+            bool otherFits = HasPhysicalSpot(p.heldBlock, p.index);
+            p.extraOption = p.heldBlock; p.heldBlock = held;
+            if (otherFits) return false;
+        }
+
+        CardData dead = p.heldBlock;
+        if (machine.RedrawDeadCard(p, "no space on the tower fits it"))
+        {
+            QueueBanner(dead.title + " fits nowhere", p.name + " discards it and draws " + (p.heldBlock != null ? ABlock(p.heldBlock) : "nothing"), PlayerColor(p.index));
+            revealPlayer = p.index; revealUntil = Time.time + RevealSeconds;
+        }
+        else
+        {
+            QueueBanner(dead.title + " fits nowhere", p.name + " can't draw another card, so they skip", PlayerColor(p.index));
+            machine.SkipPlacement(p, "no space on the tower fits the " + dead.title + " and no card is left to redraw.");
+        }
+        deadCheckKey = "";
+        AfterMove();
+        return true;
+    }
+
+    // Is there any spot on the tower, in any of the 24 turns, where this block can rest and the rules accept it?
+    bool HasPhysicalSpot(CardData style, int who)
+    {
+        GameObject probe = SpawnBlock(style, true);
+        GameObject oldGhost = ghost;
+        ghost = probe;   // RestingLevels measures the ghost's cubes
+        bool found = false;
+        try
+        {
+            foreach (Quaternion turn in TestTurns())
+            {
+                probe.transform.rotation = turn;
+                Bounds gb = RenderBounds(probe);
+                int wx = Mathf.Max(1, Mathf.RoundToInt(gb.size.x / cell)), wz = Mathf.Max(1, Mathf.RoundToInt(gb.size.z / cell));
+                if (wx > 4 || wz > 4) continue;
+                List<Bounds> cubes = new List<Bounds>();
+                foreach (Renderer r in probe.GetComponentsInChildren<Renderer>())
+                {
+                    Bounds b = r.bounds;
+                    b.center = new Vector3(b.center.x - gb.center.x, b.center.y - gb.min.y, b.center.z - gb.center.z);
+                    cubes.Add(b);
+                }
+                for (int sx = 0; sx + wx <= 4 && !found; sx++)
+                    for (int sz = 0; sz + wz <= 4 && !found; sz++)
+                    {
+                        Vector3 c = new Vector3(gridMin.x + (sx + wx * 0.5f) * cell, 0f, gridMin.z + (sz + wz * 0.5f) * cell);
+                        foreach (Level lv in RestingLevels(gb, c))
+                        {
+                            HashSet<int> covers = new HashSet<int>();
+                            int off = 0;
+                            foreach (Bounds cube in cubes)
+                            {
+                                int id = NearestTile(new Vector3(c.x + cube.center.x, 0f, c.z + cube.center.z), cell * 0.6f);
+                                if (id > 0) covers.Add(id); else off++;
+                            }
+                            int space = -1;
+                            foreach (int id in covers) { space = id; break; }
+                            GameAction a = new GameAction
+                            {
+                                type = ActionType.PlaceBlock, player = who, card = style, space = space,
+                                angle = Mathf.RoundToInt(turn.eulerAngles.y), physical = true, onBlock = lv.onBlock,
+                                covers = new List<int>(covers).ToArray(), offBase = off > 0
+                            };
+                            if (LegalMoves.Validate(s, a).legal) { found = true; break; }
+                        }
+                    }
+                if (found) break;
+            }
+        }
+        finally
+        {
+            ghost = oldGhost;
+            Destroy(probe);
+        }
+        return found;
+    }
+
+    // "a T-Block", "an L-Block", but "The Cube" (not "a The Cube").
+    static string ABlock(CardData c)
+    {
+        string t = c.title;
+        if (t.StartsWith("The ")) return t;
+        bool letterName = t.Length > 1 && t[1] == '-';                     // read as a letter: "L-Block" is "el-block"
+        bool an = letterName ? "AEFHILMNORSX".IndexOf(char.ToUpperInvariant(t[0])) >= 0 : "AEIOU".IndexOf(char.ToUpperInvariant(t[0])) >= 0;
+        return (an ? "an " : "a ") + t;
     }
 
     // "your T-Block", but "The Cube" (not "your The Cube").

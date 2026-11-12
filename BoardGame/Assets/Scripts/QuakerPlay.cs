@@ -109,6 +109,11 @@ public partial class QuakerPlay : MonoBehaviour
     [SerializeField, HideInInspector] TMP_Text blockCurrent, blockDrawPile, blockDiscardPile, eventLabel;
     [SerializeField, HideInInspector] Button drawEventButton, drawBlockButton;
     int lastDrawer = -1;
+    // The block panel shows a card the moment it is drawn, for this long, before it follows the next player.
+    const float RevealSeconds = 3f;
+    int coffeeDrawn;   // block cards drawn and discarded for the players on this Coffee Break
+    int revealPlayer = -1;
+    float revealUntil;
     [SerializeField, HideInInspector] RectTransform styleArea, actionArea;
     [SerializeField, HideInInspector] GameObject setupPanel, overPanel;
     [SerializeField, HideInInspector] Button startButton, nextButton, againButton;
@@ -299,6 +304,7 @@ public partial class QuakerPlay : MonoBehaviour
 
         Bounds b = RenderBounds(model);
         GameObject wrap = new GameObject((forGhost ? "Aim: " : "") + (style != null ? style.title : "Block"));
+        if (!forGhost) wrap.AddComponent<BlockSound>();   // Build 9: knocks when it hits something
         wrap.transform.position = b.center;
         model.transform.SetParent(wrap.transform, true);
 
@@ -325,8 +331,14 @@ public partial class QuakerPlay : MonoBehaviour
         return b;
     }
 
+    // The demo block being lowered by hand. It has no physics yet, so it isn't in placed.
+    GameObject lowering;
+
     void ClearBlocks()
     {
+        if (lowering != null) Destroy(lowering);
+        lowering = null;
+        GameSounds.StopLoop();   // a shake cut short (new match, back to the menu) mustn't keep rumbling
         foreach (Rigidbody rb in placed) if (rb != null) Destroy(rb.gameObject);
         placed.Clear();
         foreach (GameObject g in setAside) if (g != null) Destroy(g);
@@ -428,6 +440,7 @@ public partial class QuakerPlay : MonoBehaviour
             lastCollapse = collapsed ? cameDown + " of the " + towerPeak + " blocks the tower reached have come down."
                                      : "No block is left on the tower base.";
             Add("  The tower has collapsed: " + lastCollapse);
+            GameSounds.Play(GameSound.Collapse);
             int game = s.gameNumber, loser = s.lastPlacer;
             int[] pointsBefore = new int[s.players.Count];
             for (int i = 0; i < pointsBefore.Length; i++) pointsBefore[i] = s.players[i].matchPoints;
@@ -438,6 +451,7 @@ public partial class QuakerPlay : MonoBehaviour
         }
         else
         {
+            if (fallen > 0) GameSounds.Play(GameSound.BlockFall);
             if (fallen > 0) Add("  " + fallen + " block" + (fallen == 1 ? "" : "s") + " fell off but the tower is still standing. They are set aside (section 7).");
             if (cameDown > 0 && !collapsed) Add("  " + cameDown + " of the " + towerPeak + " blocks the tower reached have come down so far; not a collapse yet.");
             if (roundCheck) machine.TowerStands();
@@ -485,6 +499,7 @@ public partial class QuakerPlay : MonoBehaviour
             lines.Add(s.players[i].name + ": <color=#ffd94d>" + s.players[i].matchPoints + " / " + rules.pointsToWinMatch + "</color> points");
         gameOverText.text = string.Join("\n", lines.ToArray());
         gameOverPanel.SetActive(true);
+        GameSounds.Play(GameSound.GameOver);
         Refresh();
     }
 
@@ -536,12 +551,14 @@ public partial class QuakerPlay : MonoBehaviour
         for (shakeNumber = 1; shakeNumber <= count; shakeNumber++)
         {
             shaking = true;
+            GameSounds.StartLoop(GameSound.ShakeLoop);
             shakeCount = count;
             shakeEndsAt = Time.time + shakeSeconds;
             shakeStartedAt = Time.time;
             Refresh();
             while (Time.time < shakeEndsAt) yield return null;
             shaking = false;
+            GameSounds.StopLoop();
             if (shakeNumber < count) yield return new WaitForSeconds(0.8f);   // back to back, with a breath between
         }
         shakeSpeed = 1f;
@@ -599,6 +616,7 @@ public partial class QuakerPlay : MonoBehaviour
     void StartMatch(int playerCount)
     {
         lastDrawer = -1;   // the last drawer of the previous match may not exist in this one
+        revealPlayer = -1;
         shakeOnlyGame = -1; shakeOnlyRounds = 0;   // a new match's game 1 starts its shake-only rounds from 1
         StopDemo();
         SetHud(true);
@@ -665,11 +683,13 @@ public partial class QuakerPlay : MonoBehaviour
     {
         UpdateCamera();
         bool waitingForReady = UpdateTurnUI();   // events 3 and 14: the player clicks Ready first
+        if (revealPlayer >= 0 && Time.time >= revealUntil) { revealPlayer = -1; Refresh(); }   // the drawn card has been seen
         if (machine == null || machine.MatchOver || setupPanel.activeSelf || gameOverPanel.activeSelf)
         {
             SetGhost(null);
             return;
         }
+        if (!gameTestRunning && CheckDeadCard()) return;   // R-26: the builder's block fits nowhere (the game tests call it themselves)
         if (shaking)
             prompt.text = "<b>Shaking" + (shakeCount > 1 ? " (" + shakeNumber + " of " + shakeCount + ")" : "") + (shakeSpeed > 1f ? " at double speed" : "")
                 + (shakeExtra > 0f ? " harder (shake-only round " + shakeOnlyRounds + ")" : "")
@@ -870,6 +890,7 @@ public partial class QuakerPlay : MonoBehaviour
             + blockBounds.min.y.ToString("0.00") + ", size " + blockBounds.size.ToString("0.0")
             + ". Base slab top y=" + (baseSlab != null ? baseSlab.bounds.max.y.ToString("0.00") : "none")
             + ", slab size " + (baseSlab != null ? baseSlab.bounds.size.ToString("0.0") : "-") + ".");
+        GameSounds.Play(GameSound.BlockPlace);
 
         notice = "";
         SetGhost(null);
@@ -1093,10 +1114,27 @@ public partial class QuakerPlay : MonoBehaviour
         if (a.type == ActionType.StartShake) { StartCoroutine(Shake(a)); return; }
         bool drawingBlock = a.type == ActionType.DrawBlockCard;
         RuleResult r = machine.Play(a);
-        if (r.legal && drawingBlock) lastDrawer = a.player;
+        if (r.legal && drawingBlock) { lastDrawer = a.player; revealPlayer = a.player; revealUntil = Time.time + RevealSeconds; GameSounds.Play(GameSound.CardDraw); }
+        if (r.legal && a.type == ActionType.DrawEventCard) GameSounds.Play(GameSound.EventFlip);
         if (r.legal) OnActionDone(a);   // banners about other players (QuakerPlay.Turns.cs)
+        if (r.legal && a.type == ActionType.DrawEventCard) CoffeeBreakDraws();
         notice = r.legal ? "" : r.ToString();
         AfterMove();
+    }
+
+    // R-13, card 4 (Coffee Break): everyone draws, then discards, and nobody places. The cards still leave the
+    // block deck, but there is nothing for the players to decide, so the build draws for them in turn order.
+    // The cards go to the discard pile at the end of the round with everyone else's.
+    void CoffeeBreakDraws()
+    {
+        if (RuleCheck.EventNumber(s) != 4 || s.phase != TurnPhase.Draw || s.deckShort) return;
+        int drawn = 0;
+        foreach (int i in new List<int>(s.turnOrder))
+        {
+            if (s.phase != TurnPhase.Draw) break;
+            if (machine.Play(new GameAction { type = ActionType.DrawBlockCard, player = i }).legal) drawn++;
+        }
+        coffeeDrawn = drawn;
     }
 
     void AfterMove()
@@ -1130,6 +1168,7 @@ public partial class QuakerPlay : MonoBehaviour
         RefreshStyles();
         RefreshActions(who);
 
+        if (machine.MatchOver && !overPanel.activeSelf) GameSounds.Play(GameSound.MatchWin);
         overPanel.SetActive(machine.MatchOver);
         if (machine.MatchOver) overText.text = MatchOverText();
     }
@@ -1145,13 +1184,19 @@ public partial class QuakerPlay : MonoBehaviour
             eventSlot.gameObject.SetActive(shownEvent != null);
             if (shownEvent != null) eventSlot.Show(shownEvent);
         }
-        eventLabel.text = shownEvent != null ? "Current Event" : "Current Event\n<size=75%>none yet</size>";
+        eventLabel.text = shownEvent != null ? "Current Event"
+            : s.deckShort && s.phase != TurnPhase.Opening ? "Current Event\n<size=75%>none: shake-only round</size>"
+            : "Current Event\n<size=75%>none yet</size>";
         drawEventButton.interactable = !busy && who >= 0 && s.phase == TurnPhase.Event
             && LegalMoves.IsLegal(s, new GameAction { type = ActionType.DrawEventCard, player = who });
 
-        // Block panel: whoever is placing, or whoever drew last during the Draw phase.
-        int owner = s.phase == TurnPhase.Place ? who : s.phase == TurnPhase.Draw ? lastDrawer : -1;
-        if (owner >= s.players.Count || (s.phase == TurnPhase.Draw && owner >= 0 && !s.players[owner].drewThisRound)) owner = -1;   // last match's or last round's drawer
+        // Block panel: right after a draw, the card that player just drew (for RevealSeconds, even if the draw moved
+        // the round on to placing). Otherwise it follows the acting player: their card while they place, and empty
+        // while the next player still has to draw, so nobody mistakes the last player's card for their own.
+        bool revealing = revealPlayer >= 0 && revealPlayer < s.players.Count && Time.time < revealUntil
+            && s.players[revealPlayer].heldBlock != null;
+        int owner = revealing ? revealPlayer : s.phase == TurnPhase.Place ? who : -1;
+        if (owner >= s.players.Count) owner = -1;
         CardData card = owner >= 0 ? s.players[owner].heldBlock : null;
         if (card != shownBlock)
         {
@@ -1159,7 +1204,8 @@ public partial class QuakerPlay : MonoBehaviour
             blockSlot.gameObject.SetActive(card != null);
             if (card != null) blockSlot.Show(card);
         }
-        blockCurrent.text = card != null ? s.players[owner].name + ": " + card.title
+        blockCurrent.text = card != null ? Tinted(owner, s.players[owner].name) + (revealing ? " drew: " : ": ") + card.title
+            : s.phase == TurnPhase.Draw && who >= 0 && !s.deckShort ? Tinted(who, s.players[who].name) + "\n<size=85%>draw your block card</size>"
             : SecondDrawPending() ? Tinted(s.buildTurn, "Structural Audit:") + "\n<size=85%>draw a second block</size>"
             : s.phase != TurnPhase.Opening && DeckShortNow() ? "Deck short: no draws" : "Drawn Card: None";
         blockDrawPile.text = "Draw Pile: " + s.blockDeck.DrawPileCount;
@@ -1377,6 +1423,8 @@ public partial class QuakerPlay : MonoBehaviour
         if (startButton != null) startButton.onClick.AddListener(() => StartMatch(setupCount));
         if (nextButton != null) nextButton.onClick.AddListener(NextGame);
         if (againButton != null) againButton.onClick.AddListener(ShowSetup);
+        Button mainMenu = MatchOverMenuButton();
+        if (mainMenu != null) mainMenu.onClick.AddListener(() => LoadScene(menuSceneName));
         if (drawEventButton != null) drawEventButton.onClick.AddListener(() =>
         {
             int who = Actor();
@@ -1696,6 +1744,32 @@ public partial class QuakerPlay : MonoBehaviour
         // hidden so it doesn't cover the scene; at Play it renders now and HelpPanel.Start hides it.
         cardsPanel.SetActive(Application.isPlaying);
         helpPanel.SetActive(false);
+    }
+
+    // Match over: "Main menu" beside "New match", back to the start menu. Scenes saved before this button
+    // existed get it added at Play, so the saved UI doesn't need rebuilding.
+    Button MatchOverMenuButton()
+    {
+        if (overPanel == null || againButton == null) return null;
+        Transform existing = overPanel.transform.Find("MainMenu");
+        if (existing != null) return existing.GetComponent<Button>();
+        Button b = MakeButton(overPanel.transform, "Main menu", 32);
+        b.name = "MainMenu";
+        Anchor((RectTransform)againButton.transform, new Vector2(0.5f, 0.28f), new Vector2(0.5f, 0.28f), new Vector2(-330, -45), new Vector2(-30, 45));
+        Anchor((RectTransform)b.transform, new Vector2(0.5f, 0.28f), new Vector2(0.5f, 0.28f), new Vector2(30, -45), new Vector2(330, 45));
+        return b;
+    }
+
+    // Start menu only: a note at the foot of the rules book's category list, so players know they can read
+    // the same rules once the game has started.
+    void AddInGameRulesNote()
+    {
+        Transform menu = canvasRoot != null ? canvasRoot.transform.Find("HelpPanel/RulesSheet/RulesMenu") : null;
+        if (menu == null || menu.Find("InGameNote") != null) return;
+        TMP_Text note = B6Text(menu, "InGameNote", "These rules are also available during a game: press <b>H</b> or click <b>Help</b> at any time.",
+            20, FontStyles.Italic, TextAlignmentOptions.Center, new Color(1f, 1f, 1f, 0.85f));
+        note.richText = true;
+        B6Place(note.rectTransform, new Vector2(0.5f, 0), new Vector2(0, 80), new Vector2(290, 120));
     }
 
     // ---------------- Rules book (Help) ----------------

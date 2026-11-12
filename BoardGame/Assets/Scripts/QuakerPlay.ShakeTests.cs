@@ -376,6 +376,8 @@ public partial class QuakerPlay
         block.transform.position = pick.position;
         if (lowerFrom > 0f)
         {
+            // Not in placed until it has physics, so ClearBlocks needs to know about it in case the demo is stopped now.
+            lowering = block;
             // Hand-lower it like a player would, without physics, so it can't knock anything on the way down.
             for (float t = 0f; t < 1f && block != null; t += Time.deltaTime / 0.6f)
             {
@@ -383,6 +385,7 @@ public partial class QuakerPlay
                 block.transform.position = pick.position + Vector3.up * lowerFrom * (1f - e);
                 yield return null;
             }
+            lowering = null;
             if (block == null) yield break;
             block.transform.position = pick.position;
         }

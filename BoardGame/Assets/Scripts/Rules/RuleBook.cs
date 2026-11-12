@@ -33,13 +33,14 @@ public static class RuleBook
         R("R-16", "1, 4", "When the tower collapses (at least half of its blocks, and at least 2, came down in one placement or shake), the player who placed the most recent block loses; every other player scores 1 point.", "Tower collapses: last placer loses, rest +1"),
         R("R-17", "5",    "Event card 12 (Wind Picks Up): no part of a block may go on a Corner Zone space this round.", "Event 12: no Corner Zone this round"),
         R("R-18", "1, 7", "The match ends when a player has 3 points; players who reach 3 together share the win.", "First to 3 points wins"),
-        R("R-19", "7",    "If the block deck ran short, rounds continue with only Event, Shake and Check until the tower collapses. Each of these shake-only rounds shakes harder than the last.", "Deck short: harder shakes until it collapses"),
+        R("R-19", "7",    "If the block deck ran short, rounds continue with only Shake and Check until the tower collapses: no event card is flipped, nobody draws or places. Each of these shake-only rounds shakes harder than the last.", "Deck short: harder shakes until it collapses"),
         R("R-20", "6",    "Event card 20 (Inspector's Final Walk-Through): if the tower falls this round, the loser also loses 1 point.", "Event 20: loser loses 1 point"),
         R("R-21", "Event deck", "Event card 1 (Site Inspector): on your turn you may redraw your block card once. Event card 13 (Permit Renewed): each player draws 2 block cards and places one of them.", "Events 1, 13: redraw / extra option"),
         R("R-22", "Event deck", "Event card 9 (Second Crew Arrives): before anyone places, the first player picks a rival, who redraws their block card.", "Event 9: first player picks a rival"),
         R("R-23", "Event deck", "Shake events: cards 5, 10 and 19 shake the tower twice this round; card 15 runs the shake at double speed; card 16 shakes twice before any new placement.", "Events 5, 10, 15, 16, 19: shakes"),
         R("R-24", "Event deck", "Event card 14 (Foreman Tightens the Schedule): place within a ten-count, or skip your placement.", "Event 14: place within 10 seconds"),
         R("R-25", "Event deck", "Event card 3 (Rebar Delivery): every block this round is placed blind.", "Event 3: place blind"),
+        R("R-26", "5, 7", "If your block card can't be placed (none of that style is left in the supply, or no space on the tower fits it), discard it and draw again. If the block deck is empty, you skip.", "Dead card: discard and redraw"),
     };
 
     static Rule R(string id, string section, string text, string brief)

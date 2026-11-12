@@ -44,13 +44,13 @@ Until then the game goes on. Blocks that fall off are set aside, and they count 
 <b>First to 3 points wins the match.</b> If several players reach 3 at the same time, they share the win.
 
 ## Edge Cases
-<b>Can't place?</b> If the event card leaves nowhere legal for your block, tells you to skip (cards 4 and 18), or none of your block style is left, you skip your placement. Your block card is discarded.
+<b>Can't place?</b> If none of your block style is left in the supply, or no space on the tower fits your block (including where the event card allows), discard your card and draw again. If the block deck is empty, you skip your placement. Cards 4 and 18 still tell everyone to skip.
 
 <b>Some blocks fell, but not half?</b> The tower is still standing and the game goes on. Blocks that fell off the base are set aside until the game ends. They don't go back on the tower or into the supply, and they still count toward the collapse.
 
 <b>Who placed last?</b> Whoever put the most recent block on the tower, counting earlier rounds. If nobody placed this round (cards 4 and 18) and the tower collapses in the shake, the player who placed the last block before that loses.
 
-<b>Out of block cards?</b> Block cards are never reshuffled during a game. When there are fewer block cards than players, nobody draws or places. Each round is just the event and the shake, and each shake is stronger than the last, until the tower collapses. The first player still moves clockwise every round.
+<b>Out of block cards?</b> Block cards are never reshuffled during a game. When there are fewer block cards than players, nobody flips an event card, draws or places. Each round is just the shake, and each shake is stronger than the last, until the tower collapses. The first player still moves clockwise every round.
 
 <b>Out of event cards?</b> The used event cards are shuffled into a new deck.
 

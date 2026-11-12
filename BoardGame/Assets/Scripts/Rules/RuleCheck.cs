@@ -62,7 +62,7 @@ public static class RuleCheck
                 if (ev == 16 && !s.aftershocksDone) return RuleResult.No("R-23", "Event 16 (Aftershock Cluster): the board shakes " + BalanceConfig.Current.aftershockShakes + " times before any new placement.");
                 if (p.heldBlock == null) return RuleResult.No("R-07", p.name + " has no block card to place.");
                 if (a.card != p.heldBlock) return RuleResult.No("R-07", p.name + "'s block card is " + p.heldBlock.title + ", so only a " + p.heldBlock.title + " may be placed.");
-                if (SupplyLeft(s, a.card) <= 0) return RuleResult.No("R-07", "No " + a.card.title + " is left in the supply, so " + p.name + " skips (section 7).");
+                if (SupplyLeft(s, a.card) <= 0) return RuleResult.No("R-07", "No " + a.card.title + " is left in the supply, so " + p.name + " discards the card and draws again (R-26).");
                 return CheckSpace(s, a, ev);
 
             case ActionType.RedrawBlock:

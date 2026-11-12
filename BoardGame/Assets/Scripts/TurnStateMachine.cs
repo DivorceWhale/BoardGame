@@ -510,7 +510,20 @@ public class TurnStateMachine
         State.deckShort = false;
         State.rivalPicked = false;
         State.aftershocksDone = false;
+        deadRedraws.Clear();
         if (State.turnOrder.Count > 0) State.activePlayer = State.turnOrder[0];
+
+        // R-19 (team rule change): once the block deck is too short for everyone to draw, rounds are shake-only.
+        // No event card is flipped either, so nothing changes the shake except the shake-only escalation.
+        if (State.useRulesheet && State.blockDeck != null && State.blockDeck.TotalAvailable < State.players.Count)
+        {
+            RoundsUnderway++;   // the round is underway at once (there is no Event phase to start it)
+            State.deckShort = true;
+            State.phase = TurnPhase.Shake;
+            Log("=== Game " + State.gameNumber + ", round " + State.roundInGame + ": shake-only round ===");
+            Log("  R-19: the block deck has fewer cards than players, so there is no event card, no drawing and no placing. The first player starts the shake.");
+            return;
+        }
         Log("=== Game " + State.gameNumber + ", round " + State.roundInGame + ": Event phase ===");
     }
 
@@ -561,6 +574,35 @@ public class TurnStateMachine
         if (roundUnderway) PassFirstPlayer();
         ResolveTowerFall();
         if (!MatchOver) Settle();
+    }
+
+    // R-26 (team rule change): a block card that can't be placed (none of that style left in the supply, or no
+    // space fits it) is discarded and the player draws again. Each player gets at most MaxDeadRedraws of these per
+    // round, so a round where nothing can fit doesn't burn through the whole block deck; after that they skip.
+    public const int MaxDeadRedraws = 5;
+    readonly Dictionary<int, int> deadRedraws = new Dictionary<int, int>();
+    public string LastDeadRedraw { get; private set; }   // "Z-Block -> L-Block", for the UI banner
+
+    public bool RedrawDeadCard(PlayerState p, string why)
+    {
+        if (MatchOver || p == null || p.heldBlock == null || State.phase != TurnPhase.Place) return false;
+        int ev = RuleCheck.EventNumber(State);
+        if (ev == 4 || ev == 18) return false;   // Coffee Break and Gas Line Scare: everyone skips, whatever card they hold
+        if (State.blockDeck == null || State.blockDeck.TotalAvailable <= 0) return false;
+        int used; deadRedraws.TryGetValue(p.index, out used);
+        if (used >= MaxDeadRedraws) return false;
+        deadRedraws[p.index] = used + 1;
+
+        CardData dead = p.heldBlock;
+        State.blockDeck.Discard(dead);
+        if (p.extraOption != null) State.blockDeck.Discard(p.extraOption);
+        p.extraOption = null;
+        p.heldBlock = State.blockDeck.DrawData();
+        LastDeadRedraw = dead.title + " -> " + (p.heldBlock != null ? p.heldBlock.title : "nothing");
+        Log("    R-26: " + p.name + "'s " + dead.title + " can't be placed (" + why.TrimEnd('.') + "), so they discard it and draw "
+            + (p.heldBlock != null ? p.heldBlock.title : "nothing") + ".");
+        Settle();
+        return true;
     }
 
     public void SkipPlacement(PlayerState p, string why)
@@ -660,7 +702,13 @@ public class TurnStateMachine
                         continue;
                     }
                     PlayerState builder = s.players[s.buildTurn];
-                    if (LegalMoves.Get(s, builder).Count == 0) { SkipPlacement(builder, WhyNoPlacement(builder)); continue; }
+                    if (LegalMoves.Get(s, builder).Count == 0)
+                    {
+                        // R-26: a card that can't be placed is discarded and redrawn; skip only if that's impossible.
+                        if (RedrawDeadCard(builder, WhyNoPlacement(builder))) continue;
+                        SkipPlacement(builder, WhyNoPlacement(builder));
+                        continue;
+                    }
                     return;
 
                 case TurnPhase.Shake:

@@ -89,6 +89,16 @@ public class ScenarioConfig : ScriptableObject
     public string shakeBoostTargetTag = "";
     [Range(0f, 1f)] public float shakeBoostChance = 0f;
 
+    [Header("Shared tower (Rulesheet v2, Build 9): how this scenario plays on the one tower")]
+    [Tooltip("One line for the scenario picker: what changes on the shared tower.")]
+    [TextArea(2, 4)] public string sharedTowerRule = "";
+    [Tooltip("Blocks in the supply, and block cards in the deck, for each of the 6 styles. 0 = the 5 printed on each card.")]
+    [Min(0)] public int blocksPerStyle = 0;
+    [Tooltip("Share of the tallest tower that must come down for a collapse. 0 = the balance setting (half).")]
+    [Range(0f, 1f)] public float collapseShare = 0f;
+    // Also used on the shared tower: blockedSpaceIds (no block may cover a blocked space), firstPlacementSpaces
+    // (each seat's opening block must cover its space) and roundLimit (build rounds; after that, shake-only rounds).
+
     [Header("PLACEHOLDER until the table decides (the real shake is physical)")]
     [Range(0f, 1f)] public float placeholderCollapseChance = 0.15f;
 

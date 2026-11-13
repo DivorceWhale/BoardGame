@@ -41,6 +41,9 @@ public static class RuleBook
         R("R-24", "Event deck", "Event card 14 (Foreman Tightens the Schedule): place within a ten-count, or skip your placement.", "Event 14: place within 10 seconds"),
         R("R-25", "Event deck", "Event card 3 (Rebar Delivery): every block this round is placed blind.", "Event 3: place blind"),
         R("R-26", "5, 7", "If your block card can't be placed (none of that style is left in the supply, or no space on the tower fits it), discard it and draw again. If the block deck is empty, you skip.", "Dead card: discard and redraw"),
+        R("SC-1", "Scenario", "The Sliver: only the open spaces of the tower base may be built on. No part of a block may go over a closed (grey) space.", "Scenario: closed spaces"),
+        R("SC-2", "Scenario", "Four Corners: each player's opening block must cover their own starting space (the gold space): space 6 in the centre for the first seat, edge spaces 1, 4 and 16 for the others.", "Scenario: opening space"),
+        R("SC-3", "Scenario", "Fuse Lit: a game has 4 build rounds. After round 4, every round is a shake-only round (no event card, no drawing, no placing), each shake stronger, until the tower collapses.", "Scenario: four build rounds"),
     };
 
     static Rule R(string id, string section, string text, string brief)

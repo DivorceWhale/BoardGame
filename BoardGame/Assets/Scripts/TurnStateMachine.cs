@@ -508,6 +508,7 @@ public class TurnStateMachine
         State.buildTurn = -1;
         State.shakeDone = false;
         State.deckShort = false;
+        State.fuseOut = false;
         State.rivalPicked = false;
         State.aftershocksDone = false;
         deadRedraws.Clear();
@@ -515,13 +516,18 @@ public class TurnStateMachine
 
         // R-19 (team rule change): once the block deck is too short for everyone to draw, rounds are shake-only.
         // No event card is flipped either, so nothing changes the shake except the shake-only escalation.
-        if (State.useRulesheet && State.blockDeck != null && State.blockDeck.TotalAvailable < State.players.Count)
+        // SC-3 (Fuse Lit): after the scenario's build rounds, every round is shake-only in the same way.
+        State.fuseOut = State.useRulesheet && State.scenario != null && State.scenario.roundLimit > 0 && State.roundInGame > State.scenario.roundLimit;
+        if (State.fuseOut || (State.useRulesheet && State.blockDeck != null && State.blockDeck.TotalAvailable < State.players.Count))
         {
             RoundsUnderway++;   // the round is underway at once (there is no Event phase to start it)
             State.deckShort = true;
             State.phase = TurnPhase.Shake;
             Log("=== Game " + State.gameNumber + ", round " + State.roundInGame + ": shake-only round ===");
-            Log("  R-19: the block deck has fewer cards than players, so there is no event card, no drawing and no placing. The first player starts the shake.");
+            if (State.fuseOut)
+                Log("  SC-3: " + State.scenario.displayName + " has " + State.scenario.roundLimit + " build rounds and they are used up, so there is no event card, no drawing and no placing. The first player starts the shake.");
+            else
+                Log("  R-19: the block deck has fewer cards than players, so there is no event card, no drawing and no placing. The first player starts the shake.");
             return;
         }
         Log("=== Game " + State.gameNumber + ", round " + State.roundInGame + ": Event phase ===");

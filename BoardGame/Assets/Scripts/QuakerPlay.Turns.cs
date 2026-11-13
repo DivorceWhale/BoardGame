@@ -304,7 +304,7 @@ public partial class QuakerPlay
             if (s.deckShort && s.eventCard == null && (s.phase == TurnPhase.Shake || s.phase == TurnPhase.CollapseCheck))
             {
                 string k = s.gameNumber + ":" + s.roundInGame;
-                if (k != shakeOnlyKey) { shakeOnlyKey = k; QueueBanner("Shake-only round", "The block deck is short: no event card, no drawing, no placing. Each shake is stronger.", EventGold); }
+                if (k != shakeOnlyKey) { shakeOnlyKey = k; QueueBanner("Shake-only round", (s.fuseOut ? rules.displayName + ": the " + rules.roundLimit + " build rounds are over" : "The block deck is short") + ": no event card, no drawing, no placing. Each shake is stronger.", EventGold); }
             }
             // Turn banner: when the acting player changes, or the same player moves on to placing (after picking a
             // rival or running the aftershocks) or to the Structural Audit second draw.

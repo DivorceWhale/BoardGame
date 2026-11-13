@@ -117,7 +117,28 @@ public static class RuleCheck
             return RuleResult.No("R-06", "It is " + Name(s, s.buildTurn) + "'s turn; the opening placement goes clockwise from the first player.");
         if (a.card == null || a.card.cardType != CardType.Block) return RuleResult.No("R-01", "The opening placement must be one block from the supply.");
         if (SupplyLeft(s, a.card) <= 0) return RuleResult.No("R-01", "No " + a.card.title + " is left in the supply.");
+        int must = OpeningSpace(s, a.player);
+        if (must > 0)
+        {
+            int[] cells = a.covers != null && a.covers.Length > 0 ? a.covers : new[] { a.space };
+            if (System.Array.IndexOf(cells, must) < 0)
+                return RuleResult.No("SC-2", ScenarioName(s) + ": " + p.name + "'s opening block must cover space " + must + " (the gold space).");
+        }
         return CheckSpace(s, a, 0);   // no event card is face up before round 1
+    }
+
+    // Four Corners: the space a seat's opening block must cover, or 0 if any space will do.
+    public static int OpeningSpace(GameState s, int player)
+    {
+        if (s == null || s.scenario == null) return 0;
+        foreach (FirstPlacement fp in s.scenario.firstPlacementSpaces)
+            if (fp.playerIndex == player) return fp.spaceId;
+        return 0;
+    }
+
+    static string ScenarioName(GameState s)
+    {
+        return s.scenario != null && !string.IsNullOrEmpty(s.scenario.displayName) ? s.scenario.displayName : "Scenario";
     }
 
     static RuleResult CheckSpace(GameState s, GameAction a, int ev)
@@ -130,6 +151,8 @@ public static class RuleCheck
         bool anyCenter = false, anyCorner = false, anyEdge = false;
         foreach (int c in cells)
         {
+            if (s.scenario != null && !s.scenario.IsOpen(c))
+                return RuleResult.No("SC-1", ScenarioName(s) + ": space " + c + " is closed in this scenario, so no part of a block may go over it (the grey spaces).");
             SpaceData sp = s.board != null ? s.board.Get(c) : null;
             if (IsCenterHub(sp)) anyCenter = true;
             if (IsCorner(sp)) anyCorner = true;
@@ -170,7 +193,14 @@ public static class RuleCheck
         int used = 0;
         foreach (PlayerState q in s.players)
             foreach (GameAction g in q.placements) if (g.card == style) used++;
-        return (style != null ? style.copies : 0) - used;
+        return CopiesOf(s, style) - used;
+    }
+
+    // Blocks (and block cards) of one style in the box: the copies on its card, unless the scenario changes it (Loose Change).
+    public static int CopiesOf(GameState s, CardData style)
+    {
+        if (style == null) return 0;
+        return s != null && s.scenario != null && s.scenario.blocksPerStyle > 0 ? s.scenario.blocksPerStyle : style.copies;
     }
 
     public static int BlocksOn(GameState s, int space)

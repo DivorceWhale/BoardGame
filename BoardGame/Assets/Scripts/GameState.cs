@@ -48,6 +48,7 @@ public class GameState
     public int buildTurn = -1;     // Build phase: index of the player whose turn it is to place
     public bool shakeDone;
     public bool deckShort;         // R-05: not enough block cards for every player this round
+    public bool fuseOut;           // SC-3 (Fuse Lit): the build rounds are used up, so this round is shake-only
 
     // Rulesheet v2 (one shared tower)
     public List<int> turnOrder = new List<int>();   // player indices clockwise from the first player ([0]); turns by one seat every round

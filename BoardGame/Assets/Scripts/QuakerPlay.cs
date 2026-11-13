@@ -39,7 +39,7 @@ public partial class QuakerPlay : MonoBehaviour
     float gravityScale { get { return B.gravityScale; } }
     float blockMass { get { return B.blockMass; } }
     float settleTimeout { get { return B.settleTimeout; } }
-    float collapseShare { get { return B.collapseShare; } }
+    float collapseShare { get { return rules != null && rules.collapseShare > 0f ? rules.collapseShare : B.collapseShare; } }   // Thin Margins tightens it
     int collapseMinBlocks { get { return B.collapseMinBlocks; } }
 
     [Header("Scene objects (QUAKER > Play > Rebuild Scene Objects; built at Play if empty)")]
@@ -579,6 +579,7 @@ public partial class QuakerPlay : MonoBehaviour
         overPanel.SetActive(false);
         gameOverPanel.SetActive(false);
         SetPlayerCount(setupCount);
+        RefreshSpaceColors();   // back to the plain tower base behind the setup screen
     }
 
     void SetPlayerCount(int n)
@@ -613,58 +614,7 @@ public partial class QuakerPlay : MonoBehaviour
         return n;
     }
 
-    void StartMatch(int playerCount)
-    {
-        lastDrawer = -1;   // the last drawer of the previous match may not exist in this one
-        revealPlayer = -1;
-        shakeOnlyGame = -1; shakeOnlyRounds = 0;   // a new match's game 1 starts its shake-only rounds from 1
-        StopDemo();
-        SetHud(true);
-        log.Clear();
-        notice = "";
-        ClearBlocks();
-
-        rules = ScriptableObject.CreateInstance<ScenarioConfig>();
-        rules.displayName = "Rulesheet v2";
-        rules.playerCount = playerCount;
-        rules.board = towerBase;
-        rules.refillWhenEmpty = false;           // section 7: the block discard pile is never reshuffled
-        rules.pointsPerGameWin = B.pointsPerGameWin;   // every non-loser scores this
-        rules.pointsToWinMatch = B.pointsToWinMatch;   // first to this many points
-        foreach (CardData c in blockStyles) if (c != null) rules.blockDeck.Add(new DeckEntry { card = c, copies = c.copies });   // 5 per style, on each card
-        foreach (CardData c in eventCards) if (c != null) rules.eventDeck.Add(new DeckEntry { card = c, copies = B.eventCardCopies });
-
-        DeckManager blockDeck = NewDeck("BlockDeck", false);
-        DeckManager eventDeck = NewDeck("EventDeck", true);   // section 7: an empty event deck is reshuffled
-        SeedGame(1);                                          // before the first shuffle (QuakerPlay.Seed.cs)
-        blockDeck.Configure(rules.blockDeck);
-        eventDeck.Configure(rules.eventDeck);
-
-        machine = new TurnStateMachine(blockDeck, eventDeck, rules, playerCount);
-        machine.Log += Add;
-        machine.BeforeNewGameShuffle += SeedGame;
-        s = machine.State;
-        s.useRulesheet = true;
-        s.ownBases = false;
-        s.board = towerBase;
-        s.turnOrder.Clear();
-        for (int i = 0; i < playerCount; i++)
-        {
-            s.turnOrder.Add(i);
-            string n = PlayerName(i);
-            for (int j = 0; j < i; j++) if (s.players[j].name == n) n += " " + (i + 1);   // keep names apart
-            s.players[i].name = n;
-            PlayerPrefs.SetString("QuakerName" + i, i < nameFields.Count ? nameFields[i].text : "");
-        }
-        PlayerPrefs.Save();
-        FixPlayerColors(playerCount);
-
-        Add("New match: " + playerCount + " players. First to " + B.pointsToWinMatch + " points wins.");
-        machine.BeginOpening();
-        openingStyle = FirstStyleInSupply();
-        setupPanel.SetActive(false);
-        Refresh();
-    }
+    // StartMatch: the numbered setup procedure, in QuakerPlay.Setup.cs.
 
     DeckManager NewDeck(string deckName, bool refill)
     {
@@ -1157,11 +1107,15 @@ public partial class QuakerPlay : MonoBehaviour
         if (machine == null) return;
         int who = Actor();
 
-        header.text = "<b>QUAKER</b>   Game " + s.gameNumber + "   Round " + s.roundInGame + "   <b>" + PhaseTitle() + "</b>"
-            + (s.phase != TurnPhase.Opening && DeckShortNow() ? "   <color=#ffb060><size=75%>Block deck short: shake rounds</size></color>" : "");
+        bool fuse = rules != null && rules.roundLimit > 0;   // Fuse Lit: the round count is announced out loud
+        header.text = "<b>QUAKER</b>   Game " + s.gameNumber + "   Round " + s.roundInGame + (fuse && s.roundInGame <= rules.roundLimit ? " of " + rules.roundLimit : "")
+            + "   <b>" + PhaseTitle() + "</b>"
+            + (s.phase != TurnPhase.Opening && s.fuseOut ? "   <color=#ffb060><size=75%>Fuse burnt out: shake rounds</size></color>"
+             : s.phase != TurnPhase.Opening && DeckShortNow() ? "   <color=#ffb060><size=75%>Block deck short: shake rounds</size></color>" : "");
         prompt.text = PromptFor(who) + (notice.Length > 0 ? "\n<color=#ff8080>" + notice + "</color>" : "");
 
         RefreshCardPanels(who);
+        RefreshSpaceColors();
         playersText.text = PlayersSummary(who);
 
 
@@ -1244,7 +1198,9 @@ public partial class QuakerPlay : MonoBehaviour
         switch (s.phase)
         {
             case TurnPhase.Opening:
-                return name + ": choose any block style from the supply and drop it on the tower base." + controls;
+                int must = RuleCheck.OpeningSpace(s, who);
+                return name + ": choose any block style from the supply and drop it on the tower base."
+                    + (must > 0 ? " <color=#ffd060>" + rules.displayName + ": it must cover your gold space (space " + must + ").</color>" : "") + controls;
             case TurnPhase.Event:
                 return name + ": flip the top event card and read it aloud." + (DeckShortNow()
                     ? "\n<color=#ffb060>The block deck is down to " + s.blockDeck.TotalAvailable + " card" + (s.blockDeck.TotalAvailable == 1 ? "" : "s")
@@ -1264,7 +1220,7 @@ public partial class QuakerPlay : MonoBehaviour
                 return name + ": place " + YourBlock(p.heldBlock, "<b>", "</b>") + " on the tower." + extra + controls;
             case TurnPhase.Shake:
                 return name + ": start the shake. The board shakes for " + shakeSeconds + " seconds." + (s.deckShort
-                    ? "\n<color=#ffb060>Block deck short: shake-only round " + ShakeOnlyNumber() + ", so the board shakes harder ("
+                    ? "\n<color=#ffb060>" + (s.fuseOut ? rules.displayName + ": the " + rules.roundLimit + " build rounds are over" : "Block deck short") + ": shake-only round " + ShakeOnlyNumber() + ", so the board shakes harder ("
                       + Mathf.RoundToInt(ShakeOnlyStrength(ShakeOnlyNumber()) / shakeStrength * 100f) + "% of a normal shake). If the tower collapses, "
                       + (s.lastPlacer >= 0 ? s.players[s.lastPlacer].name : "the last placer") + " placed the most recent block and loses.</color>" : "");
             case TurnPhase.CollapseCheck:
@@ -1420,6 +1376,7 @@ public partial class QuakerPlay : MonoBehaviour
             int k = i;
             downButtons[i].onClick.AddListener(() => SwapNames(k, k + 1));
         }
+        EnsureScenarioPicker();   // Build 9 (QuakerPlay.Setup.cs)
         if (startButton != null) startButton.onClick.AddListener(() => StartMatch(setupCount));
         if (nextButton != null) nextButton.onClick.AddListener(NextGame);
         if (againButton != null) againButton.onClick.AddListener(ShowSetup);

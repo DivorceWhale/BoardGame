@@ -9435,6 +9435,12 @@ MonoBehaviour:
   gameTestRunning: 0
   gameTestReport: 
   newSeedEachGame: 1
+  scenarios:
+  - {fileID: 11400000, guid: e7958bda5e3ef984ea46767cfa15a84a, type: 2}
+  - {fileID: 11400000, guid: 31a48f0c19ae8884c9e8a8eb3791acab, type: 2}
+  - {fileID: 11400000, guid: cabc24fd2b480cb46b16882f52223f65, type: 2}
+  - {fileID: 11400000, guid: 2d9814e53d0e34042bdd6c530045c174, type: 2}
+  - {fileID: 11400000, guid: 4b04af53b06343443bbb0396e6e652ac, type: 2}
   shakeTestTimeScale: 4
   shakeTestRunning: 0
   shakeTestReport: 

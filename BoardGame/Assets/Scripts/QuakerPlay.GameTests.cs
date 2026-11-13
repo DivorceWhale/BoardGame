@@ -175,7 +175,10 @@ public partial class QuakerPlay
         if (setupPanel == null || !setupPanel.activeSelf) Conflict("the setup screen did not open");
         Press(countButtons[t.players - 2]);
         for (int i = 0; i < 4; i++) nameFields[i].text = "P" + (i + 1);
+        string keepScenario = chosenScenario != null ? chosenScenario.displayName : "";
+        ChooseScenario(null);   // the full-game tests play the rulesheet as printed
         Press(startButton);
+        try { PlayerPrefs.SetString("QuakerScenario", keepScenario); } catch { }
         yield return null;
         if (machine == null) { Conflict("Start match did not start a match"); done("did not start"); yield break; }
         if (setupPanel.activeSelf) Conflict("the setup screen stayed open after Start match");
@@ -219,7 +222,7 @@ public partial class QuakerPlay
                 if (t.eventCardsLeft >= 0) StageDeck(s.eventDeck, t.eventCardsLeft);
                 yield return null;
                 if (placed.Count != 0 || setAside.Count != 0) Conflict("Next game left blocks on the table (" + placed.Count + " on the tower, " + setAside.Count + " set aside)");
-                foreach (CardData style in blockStyles) if (RuleCheck.SupplyLeft(s, style) != style.copies) Conflict("the supply was not refilled for the new game (" + style.title + ": " + RuleCheck.SupplyLeft(s, style) + ")");
+                foreach (CardData style in blockStyles) if (RuleCheck.SupplyLeft(s, style) != RuleCheck.CopiesOf(s, style)) Conflict("the supply was not refilled for the new game (" + style.title + ": " + RuleCheck.SupplyLeft(s, style) + ")");
                 continue;
             }
 

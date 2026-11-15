@@ -4,7 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 
-// Build 9: the Build-9 scene, a copy of Build-8 with the day and night cycle and the game sounds added.
+// Build 9: the Build-9 scene, a copy of Build-8 with the game sounds and the scenario picker added.
 public static class Build9Setup
 {
     public const string Build8ScenePath = "Assets/Scenes/Build-8.unity";
@@ -18,7 +18,6 @@ public static class Build9Setup
         if (!File.Exists(Build9ScenePath)) AssetDatabase.CopyAsset(Build8ScenePath, Build9ScenePath);
 
         EditorSceneManager.OpenScene(Build9ScenePath, OpenSceneMode.Single);
-        AddDayNightCycle();
         AddGameSounds();
         SetUpScenarios();
         EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
@@ -42,7 +41,7 @@ public static class Build9Setup
         EditorBuildSettings.scenes = scenes.ToArray();
 
         EditorSceneManager.OpenScene(Build9ScenePath, OpenSceneMode.Single);
-        Debug.Log("[Quaker] Build-9 scene ready: day and night cycle (1 minute = 1 hour) and game sounds added; the Menu's Play opens Build-9.");
+        Debug.Log("[Quaker] Build-9 scene ready: game sounds and scenarios added; the Menu's Play opens Build-9.");
     }
 
     public const string ScenarioFolder = "Assets/Prefabs/Scenarios";
@@ -93,21 +92,6 @@ public static class Build9Setup
         if (g == null) { EditorUtility.DisplayDialog("Quaker", "Open Build-9.unity first (no GameSounds in this scene).", "OK"); return; }
         Selection.activeObject = g;
         EditorGUIUtility.PingObject(g);
-    }
-
-    static void AddDayNightCycle()
-    {
-        DayNightCycle d = Object.FindFirstObjectByType<DayNightCycle>();
-        if (d == null) d = new GameObject("Day Night Cycle").AddComponent<DayNightCycle>();
-        if (d.sun == null) d.sun = RenderSettings.sun;
-        if (d.sun != null)
-        {
-            d.sunHeading = d.sun.transform.eulerAngles.y;   // keep the scene's sun direction
-            d.dayColor = d.sun.color;
-            d.dayIntensity = d.sun.intensity;
-        }
-        d.secondsPerGameHour = 60f;
-        EditorUtility.SetDirty(d);
     }
 
     static void AddGameSounds()

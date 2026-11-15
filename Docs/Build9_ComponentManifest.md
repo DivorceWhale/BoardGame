@@ -34,5 +34,5 @@ open, and fix any row where the two disagree (see `Build9_ParityCheck.md`).
 
 ## Not in the box, digital only
 
-Sounds (`Scripts/GameSounds.cs`), the day and night cycle (`Scripts/DayNightCycle.cs`) and the random seed (`Scripts/GameRandom.cs`,
+Sounds (`Scripts/GameSounds.cs`) and the random seed (`Scripts/GameRandom.cs`,
 testing only, never shown to players) have no physical counterpart.

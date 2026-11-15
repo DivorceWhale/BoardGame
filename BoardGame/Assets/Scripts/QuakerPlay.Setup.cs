@@ -4,17 +4,18 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // Build 9: the setup procedure from the finished box, as code. StartMatch runs the same numbered steps, in the
-// same order, that a player follows to get from a closed box to the first turn. One method per physical step,
-// named after it. Docs/Build9_SetupProcedure.md has the same list, so the two can be read side by side.
+// same order, as "Setting up a game" in the rulebook. One method per step, named after it.
+// Docs/Build9_SetupProcedure.md has the same list, so the two can be read side by side.
 //
-//   1. Choose the scenario            (Standard, or one of the five Build 5 scenarios)
-//   2. Set the tower base on the shake board
-//   3. Sort the blocks into the supply
-//   4. Shuffle the block deck
-//   5. Shuffle the event deck
-//   6. Seat the players, tallest first
-//   7. Set out the point markers
-//   8. The first player makes the opening placement   (the first action of the game)
+//   0. Choose the scenario            (digital only, before setup: Standard is the rulebook, or a Build 5 scenario)
+//   1. Tower base: flat in the middle of the table
+//   2. Supply: sort the 30 blocks into 6 piles by style
+//   3. Block deck: shuffle, face down
+//   4. Event deck: shuffle, face down
+//   5. Scores: everyone starts at 0 and keeps count
+//   6. Player aid: the last page of the rulebook, open for everyone
+//   7. First player: the tallest player
+//   8. Opening placement               (the first action of the game)
 public partial class QuakerPlay
 {
     [Header("Build 9: scenarios to choose from at setup (Prefabs/Scenarios, from Build 5)")]
@@ -31,14 +32,15 @@ public partial class QuakerPlay
 
     void StartMatch(int playerCount)
     {
-        Step1_ChooseTheScenario(playerCount);
-        Step2_SetTheTowerBaseOnTheShakeBoard();
-        Step3_SortTheBlocksIntoTheSupply();
-        DeckManager blockDeck = Step4_ShuffleTheBlockDeck();
-        DeckManager eventDeck = Step5_ShuffleTheEventDeck();
-        Step6_SeatThePlayersTallestFirst(playerCount, blockDeck, eventDeck);
-        Step7_SetOutThePointMarkers();
-        Step8_FirstPlayerMakesTheOpeningPlacement();
+        Step0_ChooseTheScenario(playerCount);
+        Step1_PutTheTowerBaseInTheMiddle();
+        Step2_SortTheBlocksIntoTheSupply();
+        DeckManager blockDeck = Step3_ShuffleTheBlockDeck();
+        DeckManager eventDeck = Step4_ShuffleTheEventDeck();
+        Step5_EveryoneStartsAtZeroPoints();
+        Step6_LeaveThePlayerAidOpen();
+        Step7_TheTallestPlayerIsTheFirstPlayer(playerCount, blockDeck, eventDeck);
+        Step8_OpeningPlacement();
     }
 
     void SetupStep(int n, string what)
@@ -46,8 +48,9 @@ public partial class QuakerPlay
         Add("Setup step " + n + " of " + SetupSteps + ": " + what);
     }
 
-    // 1. Choose the scenario. Standard is the rulesheet as printed; a scenario changes only what it lists.
-    void Step1_ChooseTheScenario(int playerCount)
+    // 0. Before setup, digital only: choose the scenario. Standard is the rulebook as printed; a scenario changes only
+    //    what it lists. Not a rulebook step, so it is not counted in "Setup step N of 8".
+    void Step0_ChooseTheScenario(int playerCount)
     {
         log.Clear();
         notice = "";
@@ -72,11 +75,12 @@ public partial class QuakerPlay
             rules.blocksPerStyle = sc.blocksPerStyle;                             // Loose Change
             rules.collapseShare = sc.collapseShare;                               // Thin Margins
         }
-        SetupStep(1, "Choose the scenario: " + rules.displayName + (sc != null && sc.sharedTowerRule.Length > 0 ? ". " + sc.sharedTowerRule : " (the rulesheet as printed)."));
+        Add("Before setup, scenario: " + rules.displayName + (sc != null && sc.sharedTowerRule.Length > 0 ? ". " + sc.sharedTowerRule : " (the rulebook as printed)."));
     }
 
-    // 2. Set the tower base on the shake board, in the middle of the table. Clear anything left from the last match.
-    void Step2_SetTheTowerBaseOnTheShakeBoard()
+    // 1. Tower base: put it flat in the middle of the table, grid side up. Clear anything left from the last match.
+    //    The build stands it on a shake board so it can be shaken; at the table the first player shakes it by hand.
+    void Step1_PutTheTowerBaseInTheMiddle()
     {
         lastDrawer = -1;   // the last drawer of the previous match may not exist in this one
         revealPlayer = -1;
@@ -87,42 +91,56 @@ public partial class QuakerPlay
         spaceColorsKey = "";
         int closed = rules.blockedSpaceIds.Count;
         RefreshSpaceColors();
-        SetupStep(2, "Set the tower base (16 spaces) on the shake board." + (closed > 0 ? " " + closed + " spaces are closed (grey) in " + rules.displayName + "." : ""));
+        SetupStep(1, "Tower base: flat in the middle of the table, 16 spaces, empty." + (closed > 0 ? " " + closed + " spaces are closed (grey) in " + rules.displayName + "." : ""));
     }
 
-    // 3. Sort the blocks by style into the supply beside the board: 6 styles, 5 of each (or the scenario's count).
-    void Step3_SortTheBlocksIntoTheSupply()
+    // 2. Supply: sort the blocks into piles by style: 6 styles, 5 of each (or the scenario's count).
+    void Step2_SortTheBlocksIntoTheSupply()
     {
         int total = 0;
         foreach (CardData c in blockStyles) if (c != null) total += rules.blocksPerStyle > 0 ? rules.blocksPerStyle : c.copies;
-        SetupStep(3, "Sort the blocks into the supply: " + blockStyles.Count + " styles, " + total + " blocks.");
+        SetupStep(2, "Supply: " + total + " blocks sorted into " + blockStyles.Count + " piles by style.");
     }
 
-    // 4. Shuffle the block cards into a face-down block deck.
-    DeckManager Step4_ShuffleTheBlockDeck()
+    // 3. Block deck: shuffle the block cards and put them face down beside the supply.
+    DeckManager Step3_ShuffleTheBlockDeck()
     {
         foreach (CardData c in blockStyles)
             if (c != null) rules.blockDeck.Add(new DeckEntry { card = c, copies = rules.blocksPerStyle > 0 ? rules.blocksPerStyle : c.copies });   // 5 per style, on each card
         DeckManager blockDeck = NewDeck("BlockDeck", false);
         SeedGame(1);                                  // before the first shuffle (QuakerPlay.Seed.cs)
         blockDeck.Configure(rules.blockDeck);
-        SetupStep(4, "Shuffle the block deck: " + blockDeck.TotalAvailable + " block cards, face down. Nobody is dealt a card; everyone draws in the Draw phase.");
+        SetupStep(3, "Block deck: " + blockDeck.TotalAvailable + " block cards, face down. Nobody is dealt a card; everyone draws in the Draw phase.");
         return blockDeck;
     }
 
-    // 5. Shuffle the event cards into a face-down event deck.
-    DeckManager Step5_ShuffleTheEventDeck()
+    // 4. Event deck: shuffle the event cards and put them face down beside the block deck.
+    DeckManager Step4_ShuffleTheEventDeck()
     {
         foreach (CardData c in eventCards) if (c != null) rules.eventDeck.Add(new DeckEntry { card = c, copies = B.eventCardCopies });
         DeckManager eventDeck = NewDeck("EventDeck", true);   // section 7: an empty event deck is reshuffled
         eventDeck.Configure(rules.eventDeck);
-        SetupStep(5, "Shuffle the event deck: " + eventDeck.TotalAvailable + " event cards, face down.");
+        SetupStep(4, "Event deck: " + eventDeck.TotalAvailable + " event cards, face down.");
         return eventDeck;
     }
 
-    // 6. The players line up tallest to shortest and sit clockwise in that order. The tallest is the first player.
-    //    At the table this is judged by eye; here the names are entered in that order on the setup screen.
-    void Step6_SeatThePlayersTallestFirst(int playerCount, DeckManager blockDeck, DeckManager eventDeck)
+    // 5. Scores: there are no score tokens; each player keeps count of their own points, starting at 0.
+    //    The build keeps the count for them (the Turn order panel).
+    void Step5_EveryoneStartsAtZeroPoints()
+    {
+        SetupStep(5, "Scores: everyone starts at 0 and keeps count. First to " + B.pointsToWinMatch + " points wins the match.");
+    }
+
+    // 6. Player aid: the last page of the rulebook, left open where everyone can see it.
+    //    The build has the rules in Help (H) and tells each player their step at the top of the screen.
+    void Step6_LeaveThePlayerAidOpen()
+    {
+        SetupStep(6, "Player aid: the rules are in Help (H); the prompt at the top says whose step it is.");
+    }
+
+    // 7. First player: sit around the table; in the first game the tallest player is the first player.
+    //    At the table this is judged by eye; here the names are entered tallest first on the setup screen.
+    void Step7_TheTallestPlayerIsTheFirstPlayer(int playerCount, DeckManager blockDeck, DeckManager eventDeck)
     {
         machine = new TurnStateMachine(blockDeck, eventDeck, rules, playerCount);
         machine.Log += Add;
@@ -142,22 +160,16 @@ public partial class QuakerPlay
         }
         PlayerPrefs.Save();
         FixPlayerColors(playerCount);
-        SetupStep(6, "Seat the players, tallest first: " + string.Join(", ", s.players.ConvertAll(p => p.name)) + ". " + s.players[0].name + " is the first player.");
-    }
-
-    // 7. Put the point markers in a pile beside the board. Everyone starts with none.
-    void Step7_SetOutThePointMarkers()
-    {
-        SetupStep(7, "Set out the point markers: everyone starts with 0. First to " + B.pointsToWinMatch + " points wins the match.");
+        SetupStep(7, "First player, seated tallest first: " + string.Join(", ", s.players.ConvertAll(p => p.name)) + ". " + s.players[0].name + " is the first player.");
     }
 
     // 8. The first action: starting with the first player, everyone places one block of their choice on the base.
-    void Step8_FirstPlayerMakesTheOpeningPlacement()
+    void Step8_OpeningPlacement()
     {
         machine.BeginOpening();
         openingStyle = FirstStyleInSupply();
         setupPanel.SetActive(false);
-        SetupStep(8, s.players[s.buildTurn >= 0 ? s.buildTurn : 0].name + " makes the opening placement. Setup is done.");
+        SetupStep(8, s.players[s.buildTurn >= 0 ? s.buildTurn : 0].name + " starts the opening placement: each player places any 1 block, no card needed. Setup is done.");
         Add("New match: " + rules.displayName + ", " + s.players.Count + " players. First to " + B.pointsToWinMatch + " points wins.");
         Refresh();
     }

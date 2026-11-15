@@ -1,26 +1,28 @@
 # Quaker: setup procedure (Build 9)
 
-From a closed box to the first turn. Each step is one method in `BoardGame/Assets/Scripts/QuakerPlay.Setup.cs`, named
-after the step and run in this order by `StartMatch`. Each step also writes "Setup step N of 8" to the Console, so
-the order can be checked while the game runs.
+From a closed box to the first turn: "Setting up a game" in the rulebook. Each step is one method in
+`BoardGame/Assets/Scripts/QuakerPlay.Setup.cs`, named after the step and run in this order by `StartMatch`. Each step
+also writes "Setup step N of 8" to the Console, so the order can be checked while the game runs.
 
-| Step | At the table | In the code |
-|------|--------------|-------------|
-| 1 | **Choose the scenario.** Standard is the rulesheet as printed, or pick one of the five Build 5 scenarios. | `Step1_ChooseTheScenario`: the choice from the setup screen becomes the rules for the match |
-| 2 | **Set the tower base on the shake board** in the middle of the table. In The Sliver, mark spaces 9-16 as closed. | `Step2_SetTheTowerBaseOnTheShakeBoard`: clears the last match, resets the shake board, turns closed spaces grey |
-| 3 | **Sort the blocks into the supply** beside the board: 6 styles, 5 of each (Loose Change: 10 of each). | `Step3_SortTheBlocksIntoTheSupply` |
-| 4 | **Shuffle the block deck**: all block cards, face down. No cards are dealt; everyone draws in the Draw phase. | `Step4_ShuffleTheBlockDeck` |
-| 5 | **Shuffle the event deck**: the 20 event cards, face down. | `Step5_ShuffleTheEventDeck` |
-| 6 | **Seat the players, tallest first.** Line up tallest to shortest and sit clockwise in that order. The tallest player is the first player. | `Step6_SeatThePlayersTallestFirst`: the names come from the setup screen in the order entered; the first name is the first player |
-| 7 | **Set out the point markers** in a pile. Everyone starts with 0; first to 3 wins the match. | `Step7_SetOutThePointMarkers` |
-| 8 | **Opening placement (the first action).** Starting with the first player and going clockwise, each player places 1 block of their choice from the supply on the tower base. In Four Corners, it must cover the player's own space: 6 for the first player, then 1, 4 and 16. | `Step8_FirstPlayerMakesTheOpeningPlacement`: starts the opening placement and hides the setup screen |
+| Step | At the table (rulebook) | In the code |
+|------|-------------------------|-------------|
+| 0 | Digital only, before setup: **choose the scenario.** Standard is the rulebook; the five Build 5 scenarios are extras. | `Step0_ChooseTheScenario`: the choice from the setup screen becomes the rules for the match. Not a rulebook step, so it is not numbered in the Console |
+| 1 | **Tower base.** Put the tower base flat in the middle of the table, grid side up. | `Step1_PutTheTowerBaseInTheMiddle`: clears the last match and resets the base; in The Sliver, spaces 9-16 turn grey |
+| 2 | **Supply.** Sort the 30 blocks into 6 piles by style, where every player can reach them. | `Step2_SortTheBlocksIntoTheSupply` (Loose Change: 10 of each) |
+| 3 | **Block deck.** Shuffle the 30 block cards and put them face down beside the supply. | `Step3_ShuffleTheBlockDeck`: nobody is dealt a card; everyone draws in the Draw phase |
+| 4 | **Event deck.** Shuffle the 20 event cards and put them face down beside the block deck. | `Step4_ShuffleTheEventDeck` |
+| 5 | **Scores.** Each player keeps count of their own points, starting at 0. In later games, keep your points. | `Step5_EveryoneStartsAtZeroPoints`: the build keeps the count in the Turn order panel |
+| 6 | **Player aid.** Leave the last page of the rulebook open where every player can see it. | `Step6_LeaveThePlayerAidOpen`: the rules are in Help (H) and the prompt at the top says whose step it is |
+| 7 | **First player.** Sit around the table. In the first game, the tallest player is the first player. | `Step7_TheTallestPlayerIsTheFirstPlayer`: the names come from the setup screen, entered tallest first; the first name is the first player |
+| 8 | **Opening placement (the first action).** Clockwise from the first player, each player picks any 1 block from the supply and places it on the tower base. No block card is needed. In Four Corners, it must cover the player's own space: 6 for the first player, then 1, 4 and 16. | `Step8_OpeningPlacement`: starts the opening placement and hides the setup screen |
 
-After step 8, round 1 starts with the first player flipping the event card (the rulesheet, "Each round").
+After step 8, round 1 starts with the first player flipping the event card (the rulebook, "Playing a round").
 
 ## Cold start
 
 1. Open `Scenes/Menu.unity` and press Play (or run a build). Press **Play** on the start menu.
-2. On the setup screen, pick the number of players, enter the names clockwise from the tallest, and pick a scenario.
+2. On the setup screen, pick the number of players, enter the names from tallest to shortest, and pick a scenario
+   (Standard is the rulebook).
 3. Press **Start match**. Steps 1-8 run, and the first player is asked for the opening placement.
 
 No scene editing is needed. The scenario list on the setup screen comes from `Prefabs/Scenarios` (QUAKER > Build 9 > Set Up Scenarios).

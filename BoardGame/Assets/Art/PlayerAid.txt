@@ -1,19 +1,25 @@
-QUAKER - PLAYER AID
+QUAKER - PLAYER AID (the Quick reference, last page of the rulebook)
+One shared copy: keep it open where all players can see it.
 
-TURN ORDER (every round)
-1. Event: the starting player draws and reads one event card.
-2. Draw: every player draws one block card and takes that block.
-3. Choose and commit: place your block on your tower at any angle. Once you let go, it stays.
-4. Shake: when every block is placed, the board shakes.
-5. Check: a fallen tower is out for this game. One tower left = that player scores 1 point.
-6. Pass: discard the event and block cards. Starting player passes clockwise.
+EVERY ROUND
+1. Event - the first player flips and reads the top event card.
+2. Draw - everyone draws 1 block card.
+3. Build - clockwise from the first player, place the block on your card.
+4. Shake - the first player shakes the tower base for 5 seconds.
+5. Check - has the tower collapsed? If not, discard the cards, pass the first player clockwise and start a new round.
 
-ACTIONS AND COSTS
-Choose a cell - costs nothing; you use the block you drew.
-Commit the block - costs the block; no adjusting after release.
-Negotiate the tallest tower - costs table time; players must agree.
-Crew abilities, once per game: Redraw, Skip placement, Ignore an event, Swap block cards.
+BEFORE ROUND 1 OF EVERY GAME
+Opening placement: clockwise from the first player, each player places any 1 block from the supply, no card needed.
+In the first game, the tallest player is the first player.
 
-WINNING
-Last tower standing wins the game (+1 point). Towers fall in the same shake: tallest wins.
-First to 3 points wins the match.
+PLACING
+Only the style on your card - on the spaces or on top of blocks - any angle - nothing hanging off the base -
+you may slide under an overhang - once you let go, it stays.
+
+WHEN THE TOWER FALLS
+It has collapsed once half of its tallest (at least 2 blocks) has come down, counted over the whole game.
+The player who placed the most recent block loses. Everyone else scores 1 point.
+First to 3 points wins the match. Players keep count themselves.
+
+BLOCK DECK TOO SHORT?
+Nobody draws or places. Play Event, Shake and Check only, and shake a little harder each round until the tower collapses.

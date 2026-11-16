@@ -1489,7 +1489,7 @@ public partial class QuakerPlay : MonoBehaviour
         st.alignment = TextAlignmentOptions.Center;
         st.text = "<size=160%><b>QUAKER</b></size>\nOne shared tower\n\n"
             + "Everyone builds on the one tower base. When it falls, whoever placed last loses that game.\n"
-            + "Enter your names clockwise around the table, starting with the tallest player, who goes first in round 1. After every round the first player passes clockwise.";
+            + "Enter your names clockwise around the table. The first name goes first in round 1. After every round the first player passes clockwise.";
         Anchor(st.rectTransform, new Vector2(0.1f, 0.62f), new Vector2(0.9f, 0.95f), Vector2.zero, Vector2.zero);
 
         // How many players

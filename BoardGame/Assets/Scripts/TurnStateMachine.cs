@@ -552,7 +552,7 @@ public class TurnStateMachine
 
     // At the end of every round the first player passes clockwise: the turn order turns by one seat,
     // so the next player clockwise flips the event card, places first and runs the shake. It keeps
-    // turning from game to game; the tallest player is only the first player in round 1 of the match.
+    // turning from game to game; the first name entered is only the first player in round 1 of the match.
     // Seats per round: BalanceConfig.firstPlayerSeatsPerRound (table change, playtest 2: 0 -> 1).
     public void PassFirstPlayer()
     {

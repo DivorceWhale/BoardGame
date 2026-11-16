@@ -20,7 +20,7 @@ public static class RuleBook
         R("R-03", "4",    "Only the first player flips the event card, and only once per round.", "Only the first player flips the event"),
         R("R-04", "4, 5", "Each player draws exactly 1 block card per round.", "Draw exactly 1 block card per round"),
         R("R-05", "7",    "If the block deck has fewer cards than players, nobody draws or places this round.", "Deck too small: nobody draws or places"),
-        R("R-06", "3, 4", "Players place in turn order, clockwise from the first player, only on their own turn. The tallest player is the first player in round 1; after every round the first player passes clockwise. In the Unity build the names are entered clockwise at setup.", "Place clockwise from the first player"),
+        R("R-06", "3, 4", "Players place in turn order, clockwise from the first player, only on their own turn. The first name entered at setup is the first player in round 1; after every round the first player passes clockwise.", "Place clockwise from the first player"),
         R("R-07", "5",    "In the Build phase you may place only the block style shown on your block card, and only while one of that style is left in the supply.", "Place only the style on your card"),
         R("R-08", "4, 5", "Each player places exactly 1 block per round (event card 17: the last player places a second block).", "1 placement per round (card 17: +1)"),
         R("R-09", "5",    "Blocks go on the one shared tower base: on its 16 spaces or on top of blocks there. Every part of the block must be over the 16 spaces; nothing may hang off the base.", "Place on one of the 16 shared spaces"),
@@ -54,7 +54,7 @@ public static class RuleBook
     // Rules from the rulesheet the build does not check, and why.
     public static readonly string[] NotChecked =
     {
-        "Who is tallest (section 3): measured at the table. The Unity build makes the first name entered the first player and seats the rest clockwise in the order entered.",
+        "Who goes first (section 3): decided at the table. The Unity build makes the first name entered the first player and seats the rest clockwise in the order entered.",
         "Event card 14's ten-count and event card 3's blind placement are timed and hidden on screen in the Unity build, but at the table they rely on the players.",
         "A collapse on the real tower base is judged by eye; the Unity build counts it as half of the blocks (at least 2) coming down in one placement or shake.",
     };
@@ -83,7 +83,7 @@ public static class RuleBook
         foreach (Rule r in All) sb.AppendLine("<b>" + r.id + "</b>  " + r.brief);
         sb.AppendLine();
         sb.AppendLine("<b>NOT CHECKED</b> (physical): whether the tower fell,");
-        sb.AppendLine("fallen blocks, angle, who is tallest,");
+        sb.AppendLine("fallen blocks, angle, who goes first,");
         sb.AppendLine("event cards 3, 14 and shake speed.");
         return sb.ToString();
     }

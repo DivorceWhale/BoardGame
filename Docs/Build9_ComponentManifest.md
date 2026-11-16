@@ -27,7 +27,7 @@ disagree are listed under "Open items" in `Build9_ParityCheck.md`.
 |------|----------|--------------|
 | The shake | No shake platform: the first player shakes the tower base by hand for 5 seconds | "Shake Board" object in `Build-9.unity` under the tower base (kinematic Rigidbody), built by `QuakerPlay` (QUAKER > Play > Rebuild Scene Objects). Length 5 s (`shakeSeconds`), strength and speed in `Resources/QuakerBalance.asset` |
 | Points | No score tokens: players keep count themselves | `PlayerState.matchPoints`, shown as "0 / 3 points" in the Turn order panel |
-| First player (the tallest player) | Judged by eye at the table | Names are entered tallest first on the setup screen; the first name is the first player (setup step 7) |
+| First player | The tallest player: a physical rule, judged at the table | Not in the build: names are entered clockwise on the setup screen and the first name is the first player (setup step 7) |
 | Player colours | None | Colour swatch next to each name on the setup screen (`QuakerPlay.Turns.cs`, `FixPlayerColors`) |
 | Table | The table you play on | "Table" object in `Build-9.unity`, `Art/Table.mat`; fallen blocks are set aside on it |
 | Scenarios (the five from Build 5) | Not in the rulebook | `Prefabs/Scenarios/*.asset` (`ScenarioConfig`): Four Corners, Fuse Lit, Loose Change, The Sliver, Thin Margins; chosen before setup. Standard is the rulebook |

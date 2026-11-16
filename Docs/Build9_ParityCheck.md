@@ -20,7 +20,7 @@ starting positions at the moment the first player is about to make the opening p
 | 6 | Event card face up | None until round 1 | None until round 1 | Same |
 | 7 | Points | 0 for every player, kept by the build | 0; each player keeps count | Same |
 | 8 | Player aid | Help (H) and the prompt at the top of the screen | Last page of the rulebook, open for everyone | Same job |
-| 9 | First player | The first name entered (the tallest) | The tallest player | Same |
+| 9 | First player | The first name entered | The tallest player | Physical only: the build leaves the choice to the players |
 | 10 | First action | Opening placement, clockwise from the first player: any block from the supply, no card | Same | Same |
 | 11 | Closed spaces (The Sliver) | Spaces 9-16 grey; a block over them is refused (SC-1) | Not in the rulebook | Digital only |
 | 12 | Opening spaces (Four Corners) | Gold space for the player placing; first player 6, then 1, 4, 16; any other spot is refused (SC-2) | Not in the rulebook | Digital only |
@@ -32,7 +32,7 @@ These are the places the two can disagree. The build follows the rule in the rig
 
 | At the table | In the build |
 |--------------|--------------|
-| Players see who is tallest | Players enter their names tallest first; the code can't measure height, so the order typed is the order used |
+| Players see who is tallest and that player goes first | Left out of the build: height is a physical thing. The players enter their names clockwise and the first name goes first |
 | Shuffling by hand | A seeded shuffle (`GameRandom`). The same seed deals the same cards, for testing; the seed is never shown to players |
 | The first player shakes the base by hand for 5 seconds | The shake board moves the base for 5 seconds at a set strength (`QuakerBalance.asset`), the same every time |
 | "Has the tower collapsed?" is a call the players make by eye | Collapse is counted: half of the tallest tower this game has come down (a third in Thin Margins), at least 2 blocks |

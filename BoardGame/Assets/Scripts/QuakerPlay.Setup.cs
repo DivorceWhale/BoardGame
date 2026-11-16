@@ -14,7 +14,7 @@ using UnityEngine.UI;
 //   4. Event deck: shuffle, face down
 //   5. Scores: everyone starts at 0 and keeps count
 //   6. Player aid: the last page of the rulebook, open for everyone
-//   7. First player: the tallest player
+//   7. First player: the first name entered
 //   8. Opening placement               (the first action of the game)
 public partial class QuakerPlay
 {
@@ -39,7 +39,7 @@ public partial class QuakerPlay
         DeckManager eventDeck = Step4_ShuffleTheEventDeck();
         Step5_EveryoneStartsAtZeroPoints();
         Step6_LeaveThePlayerAidOpen();
-        Step7_TheTallestPlayerIsTheFirstPlayer(playerCount, blockDeck, eventDeck);
+        Step7_ChooseTheFirstPlayer(playerCount, blockDeck, eventDeck);
         Step8_OpeningPlacement();
     }
 
@@ -138,9 +138,9 @@ public partial class QuakerPlay
         SetupStep(6, "Player aid: the rules are in Help (H); the prompt at the top says whose step it is.");
     }
 
-    // 7. First player: sit around the table; in the first game the tallest player is the first player.
-    //    At the table this is judged by eye; here the names are entered tallest first on the setup screen.
-    void Step7_TheTallestPlayerIsTheFirstPlayer(int playerCount, DeckManager blockDeck, DeckManager eventDeck)
+    // 7. First player: the players sit around the table and enter their names clockwise on the setup screen.
+    //    The first name entered is the first player. How the table picks who goes first is physical, not in the build.
+    void Step7_ChooseTheFirstPlayer(int playerCount, DeckManager blockDeck, DeckManager eventDeck)
     {
         machine = new TurnStateMachine(blockDeck, eventDeck, rules, playerCount);
         machine.Log += Add;
@@ -160,7 +160,7 @@ public partial class QuakerPlay
         }
         PlayerPrefs.Save();
         FixPlayerColors(playerCount);
-        SetupStep(7, "First player, seated tallest first: " + string.Join(", ", s.players.ConvertAll(p => p.name)) + ". " + s.players[0].name + " is the first player.");
+        SetupStep(7, "First player, seated clockwise: " + string.Join(", ", s.players.ConvertAll(p => p.name)) + ". " + s.players[0].name + " is the first player.");
     }
 
     // 8. The first action: starting with the first player, everyone places one block of their choice on the base.

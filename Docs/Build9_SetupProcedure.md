@@ -13,7 +13,7 @@ also writes "Setup step N of 8" to the Console, so the order can be checked whil
 | 4 | **Event deck.** Shuffle the 20 event cards and put them face down beside the block deck. | `Step4_ShuffleTheEventDeck` |
 | 5 | **Scores.** Each player keeps count of their own points, starting at 0. In later games, keep your points. | `Step5_EveryoneStartsAtZeroPoints`: the build keeps the count in the Turn order panel |
 | 6 | **Player aid.** Leave the last page of the rulebook open where every player can see it. | `Step6_LeaveThePlayerAidOpen`: the rules are in Help (H) and the prompt at the top says whose step it is |
-| 7 | **First player.** Sit around the table. In the first game, the tallest player is the first player. | `Step7_TheTallestPlayerIsTheFirstPlayer`: the names come from the setup screen, entered tallest first; the first name is the first player |
+| 7 | **First player.** Sit around the table. In the first game, the tallest player is the first player. | `Step7_ChooseTheFirstPlayer`: the names come from the setup screen, entered clockwise; the first name is the first player. Picking the tallest is physical only, so it is not in the build |
 | 8 | **Opening placement (the first action).** Clockwise from the first player, each player picks any 1 block from the supply and places it on the tower base. No block card is needed. In Four Corners, it must cover the player's own space: 6 for the first player, then 1, 4 and 16. | `Step8_OpeningPlacement`: starts the opening placement and hides the setup screen |
 
 After step 8, round 1 starts with the first player flipping the event card (the rulebook, "Playing a round").
@@ -21,7 +21,7 @@ After step 8, round 1 starts with the first player flipping the event card (the 
 ## Cold start
 
 1. Open `Scenes/Menu.unity` and press Play (or run a build). Press **Play** on the start menu.
-2. On the setup screen, pick the number of players, enter the names from tallest to shortest, and pick a scenario
+2. On the setup screen, pick the number of players, enter the names clockwise, and pick a scenario
    (Standard is the rulebook).
 3. Press **Start match**. Steps 1-8 run, and the first player is asked for the opening placement.
 

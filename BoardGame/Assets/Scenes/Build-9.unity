@@ -4702,8 +4702,8 @@ MonoBehaviour:
     on the one tower base. When it falls, whoever placed last loses that game.
 
     Enter
-    your names clockwise around the table, starting with the tallest player, who
-    goes first in round 1. After every round the first player passes clockwise.'
+    your names clockwise around the table. The first name goes first in round 1.
+    After every round the first player passes clockwise.'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

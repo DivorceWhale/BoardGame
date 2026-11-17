@@ -85,6 +85,37 @@ public static class Build9Setup
         Debug.Log("[Quaker] " + ordered.Count + " scenarios set up for the shared tower and added to the setup screen of the open scene.");
     }
 
+    public const string NoScenariosScenePath = "Assets/Scenes/Build-9-NoScenarios.unity";
+
+    // A copy of Build-9 with the scenario list emptied: the setup screen has no scenario picker and every match
+    // plays the rulebook as printed. Build-9 itself keeps the scenarios (the assignment's cold start uses them).
+    [MenuItem("QUAKER/Build 9/Create Scene Without Scenarios")]
+    public static void CreateNoScenariosScene()
+    {
+        if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        if (!File.Exists(NoScenariosScenePath)) AssetDatabase.CopyAsset(Build9ScenePath, NoScenariosScenePath);
+        EditorSceneManager.OpenScene(NoScenariosScenePath, OpenSceneMode.Single);
+        foreach (QuakerPlay q in Object.FindObjectsByType<QuakerPlay>(FindObjectsSortMode.None))
+        {
+            q.scenarios = new List<ScenarioConfig>();
+            EditorUtility.SetDirty(q);
+        }
+        EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+
+        // Build Settings: add it after Build-9 (Menu still opens Build-9)
+        var scenes = new List<EditorBuildSettingsScene>();
+        bool added = false;
+        foreach (var s in EditorBuildSettings.scenes)
+        {
+            if (s.path == NoScenariosScenePath) continue;
+            scenes.Add(s);
+            if (s.path == Build9ScenePath) { scenes.Add(new EditorBuildSettingsScene(NoScenariosScenePath, true)); added = true; }
+        }
+        if (!added) scenes.Add(new EditorBuildSettingsScene(NoScenariosScenePath, true));
+        EditorBuildSettings.scenes = scenes.ToArray();
+        Debug.Log("[Quaker] Build-9-NoScenarios ready: a copy of Build-9 with no scenario picker.");
+    }
+
     [MenuItem("QUAKER/Build 9/Select Game Sounds")]
     public static void SelectSounds()
     {

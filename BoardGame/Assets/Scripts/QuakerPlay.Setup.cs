@@ -203,6 +203,11 @@ public partial class QuakerPlay
         if (old != null) Destroy(old.gameObject);
         scenarioButtons.Clear();
 
+        // A scene with no scenarios in its list (Build-9-NoScenarios) has no picker: every match is the rulebook as printed.
+        bool any = false;
+        foreach (ScenarioConfig sc in scenarios) if (sc != null) any = true;
+        if (!any) { chosenScenario = null; scenarioInfo = null; return; }
+
         GameObject row = new GameObject("ScenarioPicker", typeof(RectTransform));
         row.transform.SetParent(setupPanel.transform, false);
         B6Place((RectTransform)row.transform, new Vector2(0.5f, 0.1f), new Vector2(0, 150), new Vector2(1500, 140));

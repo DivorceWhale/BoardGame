@@ -334,6 +334,21 @@ public partial class QuakerPlay : MonoBehaviour
     // The demo block being lowered by hand. It has no physics yet, so it isn't in placed.
     GameObject lowering;
 
+    // Who placed each block on the tower (R-27 strikes).
+    readonly Dictionary<Rigidbody, int> blockOwner = new Dictionary<Rigidbody, int>();
+
+    // Team change: a placed block takes the colour its player picked on the setup screen.
+    void TintBlock(GameObject block, int player)
+    {
+        Color c = PlayerColor(player);
+        foreach (Renderer r in block.GetComponentsInChildren<Renderer>())
+            foreach (Material m in r.materials)
+            {
+                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
+                else if (m.HasProperty("_Color")) m.SetColor("_Color", c);
+            }
+    }
+
     void ClearBlocks()
     {
         if (lowering != null) Destroy(lowering);
@@ -341,6 +356,7 @@ public partial class QuakerPlay : MonoBehaviour
         GameSounds.StopLoop();   // a shake cut short (new match, back to the menu) mustn't keep rumbling
         foreach (Rigidbody rb in placed) if (rb != null) Destroy(rb.gameObject);
         placed.Clear();
+        blockOwner.Clear();
         foreach (GameObject g in setAside) if (g != null) Destroy(g);
         setAside.Clear();
         ResetTowerRecord();
@@ -424,10 +440,13 @@ public partial class QuakerPlay : MonoBehaviour
 
         int blocksBefore = placed.Count;
         int fallen = 0;
+        List<int> fellFrom = new List<int>();   // the player who placed each block that fell off (R-27)
         for (int i = placed.Count - 1; i >= 0; i--)
         {
             if (OnTower(placed[i])) continue;
             fallen++;
+            int owner;
+            if (blockOwner.TryGetValue(placed[i], out owner)) { fellFrom.Add(owner); blockOwner.Remove(placed[i]); }
             SetAside(placed[i]);
             placed.RemoveAt(i);
         }
@@ -447,14 +466,37 @@ public partial class QuakerPlay : MonoBehaviour
             bool event20 = RuleCheck.EventNumber(s) == 20;
             machine.TowerFell();
             // Leave the fallen tower in view until the players move on to the next game.
-            if (!machine.MatchOver) ShowGameOver(game, loser, pointsBefore, event20);
+            if (!machine.MatchOver) ShowGameOver(game, new List<int>(machine.LastLosers), pointsBefore, event20, false);
         }
         else
         {
             if (fallen > 0) GameSounds.Play(GameSound.BlockFall);
             if (fallen > 0) Add("  " + fallen + " block" + (fallen == 1 ? "" : "s") + " fell off but the tower is still standing. They are set aside (section 7).");
             if (cameDown > 0 && !collapsed) Add("  " + cameDown + " of the " + towerPeak + " blocks the tower reached have come down so far; not a collapse yet.");
-            if (roundCheck) machine.TowerStands();
+
+            // R-27: every block that fell off is a strike for the player who placed it. At the limit, they lose the game.
+            List<int> struckOut = new List<int>();
+            foreach (int owner in fellFrom)
+            {
+                int n = machine.AddStrike(owner);
+                if (n >= B.strikesToLose) { if (!struckOut.Contains(owner)) struckOut.Add(owner); }
+                else QueueBanner("Strike " + n + " of " + B.strikesToLose, s.players[owner].name + "\u2019s block fell off the tower", PlayerColor(owner));
+            }
+            if (struckOut.Count > 0)
+            {
+                List<string> names = new List<string>();
+                foreach (int i in struckOut) names.Add(s.players[i].name);
+                lastCollapse = string.Join(" and ", names.ToArray()) + (struckOut.Count == 1 ? " has " : " have ") + B.strikesToLose
+                    + " strikes: " + B.strikesToLose + " blocks they placed fell off the tower this game.";
+                Add("  Strike out: " + lastCollapse);
+                GameSounds.Play(GameSound.Collapse);
+                int game = s.gameNumber;
+                int[] pointsBefore = new int[s.players.Count];
+                for (int i = 0; i < pointsBefore.Length; i++) pointsBefore[i] = s.players[i].matchPoints;
+                machine.StruckOut(struckOut);
+                if (!machine.MatchOver) ShowGameOver(game, new List<int>(machine.LastLosers), pointsBefore, false, true);
+            }
+            else if (roundCheck) machine.TowerStands();
         }
         busy = false;
         AfterMove();
@@ -479,13 +521,20 @@ public partial class QuakerPlay : MonoBehaviour
         setAside.Add(g);
     }
 
-    void ShowGameOver(int game, int loser, int[] pointsBefore, bool event20)
+    void ShowGameOver(int game, List<int> losers, int[] pointsBefore, bool event20, bool struckOut)
     {
-        List<string> lines = new List<string> { "<size=130%><b>The tower has collapsed!</b></size>", "<size=80%>" + lastCollapse + "</size>", "" };
-        lines.Add(loser >= 0 ? "<b>" + s.players[loser].name + "</b> placed the most recent block and loses game " + game + "."
+        int loser = losers.Count > 0 ? losers[0] : -1;
+        List<string> lines = new List<string> { "<size=130%><b>" + (struckOut ? "Three strikes!" : "The tower has collapsed!") + "</b></size>", "<size=80%>" + lastCollapse + "</size>", "" };
+        if (struckOut)
+        {
+            List<string> names = new List<string>();
+            foreach (int i in losers) names.Add("<b>" + s.players[i].name + "</b>");
+            lines.Add(string.Join(" and ", names.ToArray()) + (losers.Count == 1 ? " strikes out and loses game " : " strike out and lose game ") + game + ".");
+        }
+        else lines.Add(loser >= 0 ? "<b>" + s.players[loser].name + "</b> placed the most recent block and loses game " + game + "."
                              : "Nobody had placed a block.");
         List<string> scorers = new List<string>();
-        for (int i = 0; i < s.players.Count; i++) if (i != loser) scorers.Add(s.players[i].name);
+        for (int i = 0; i < s.players.Count; i++) if (!losers.Contains(i)) scorers.Add(s.players[i].name);
         if (scorers.Count > 0)
         {
             string who = scorers.Count == 1 ? scorers[0]
@@ -839,6 +888,8 @@ public partial class QuakerPlay : MonoBehaviour
         Collider[] cols = block.GetComponentsInChildren<Collider>();
         foreach (Collider col in cols) col.sharedMaterial = grip;
         placed.Add(rb);
+        blockOwner[rb] = aimed.player;
+        TintBlock(block, aimed.player);
 
         // Debug line for the Console: if a block ever passes through the base, these numbers show why.
         Bounds blockBounds = cols.Length > 0 ? cols[0].bounds : RenderBounds(block);
@@ -1250,7 +1301,8 @@ public partial class QuakerPlay : MonoBehaviour
             else status = p.drewThisRound ? "no card" : "-";
             string tag = i == s.turnOrder[0] ? " <size=75%>(first player)</size>" : "";
             lines.Add((i == who ? "<b>> " : "   ") + Tinted(i, p.name) + (i == who ? "</b>" : "") + tag);
-            lines.Add("      <color=#ffd94d>" + p.matchPoints + " / " + rules.pointsToWinMatch + "</color> points   <size=80%>" + status + "</size>");
+            lines.Add("      <color=#ffd94d>" + p.matchPoints + " / " + rules.pointsToWinMatch + "</color> points"
+                + (p.strikes > 0 ? "   <color=#ff7070>" + p.strikes + " / " + B.strikesToLose + " strikes</color>" : "") + "   <size=80%>" + status + "</size>");
         }
         lines.Add("");
         lines.Add("<size=80%>Blocks on the tower: " + placed.Count + (setAside.Count > 0 ? "   Set aside: " + setAside.Count : "") + "   Block deck: " + s.blockDeck.TotalAvailable + "   Event deck: " + s.eventDeck.TotalAvailable + "</size>");

@@ -428,17 +428,36 @@ public class TurnStateMachine
         Log("  Opening placement for game " + State.gameNumber + ": clockwise from the first player, 1 block of your choice each.");
     }
 
+    // Who lost the game that just ended (one player, or several who struck out together).
+    public List<int> LastLosers { get; private set; } = new List<int>();
+
     // The table reports the tower has fallen. R-16: the most recent placer loses; everyone else scores.
-    public void ResolveTowerFall()
+    // struckOut: R-27, the game ends because these players reached the strike limit; they lose instead.
+    public void ResolveTowerFall(List<int> struckOut = null)
     {
         ScenarioConfig sc = State.scenario;
         State.towerFell = true;
-        PlayerState loser = State.lastPlacer >= 0 ? State.players[State.lastPlacer] : null;
-        Log("  R-16: the tower has fallen. " + (loser != null ? loser.name + " placed the most recent block and loses game " + State.gameNumber + "." : "Nobody had placed a block."));
+        List<PlayerState> losers = new List<PlayerState>();
+        if (struckOut != null)
+        {
+            foreach (int i in struckOut) if (i >= 0 && i < State.players.Count && !losers.Contains(State.players[i])) losers.Add(State.players[i]);
+            List<string> names = new List<string>();
+            foreach (PlayerState p in losers) names.Add(p.name);
+            Log("  R-27: " + string.Join(" and ", names.ToArray()) + (losers.Count == 1 ? " has " : " have ") + BalanceConfig.Current.strikesToLose
+                + " strikes and " + (losers.Count == 1 ? "loses" : "lose") + " game " + State.gameNumber + ".");
+        }
+        else
+        {
+            if (State.lastPlacer >= 0) losers.Add(State.players[State.lastPlacer]);
+            Log("  R-16: the tower has fallen. " + (losers.Count > 0 ? losers[0].name + " placed the most recent block and loses game " + State.gameNumber + "." : "Nobody had placed a block."));
+        }
+        LastLosers = new List<int>();
+        foreach (PlayerState p in losers) LastLosers.Add(p.index);
+        PlayerState loser = struckOut == null && losers.Count > 0 ? losers[0] : null;   // event 20 is about the tower falling
 
         foreach (PlayerState p in State.players)
         {
-            if (p == loser) continue;
+            if (losers.Contains(p)) continue;
             p.matchPoints += sc.pointsPerGameWin;
             Log("    " + p.name + " scores " + sc.pointsPerGameWin + (sc.pointsPerGameWin == 1 ? " point" : " points") + " (" + p.matchPoints + ").");
         }
@@ -570,7 +589,22 @@ public class TurnStateMachine
 
     // The physics check saw the tower fall, after a placement or after the shake. R-16: the most recent
     // placer loses, which is also the player who was placing if it fell right after their block (section 1).
-    public void TowerFell()
+    public void TowerFell() { EndGame(null); }
+
+    // R-27 (team rule change): a block this player placed fell off the tower. Returns their strikes this game.
+    public int AddStrike(int player)
+    {
+        if (player < 0 || player >= State.players.Count) return 0;
+        PlayerState p = State.players[player];
+        p.strikes++;
+        Log("  R-27: a block " + p.name + " placed fell off the tower: strike " + p.strikes + " of " + BalanceConfig.Current.strikesToLose + ".");
+        return p.strikes;
+    }
+
+    // R-27: these players reached the strike limit, so the game ends and they lose it, the same way a collapse ends it.
+    public void StruckOut(List<int> players) { EndGame(players); }
+
+    void EndGame(List<int> struckOut)
     {
         if (MatchOver) return;
         // The round ends with the game, so the next game starts one seat on. A fall from the opening
@@ -578,7 +612,7 @@ public class TurnStateMachine
         // but no event card is flipped yet), so the first player stays put.
         bool roundUnderway = State.phase != TurnPhase.Opening && State.phase != TurnPhase.Event;
         if (roundUnderway) PassFirstPlayer();
-        ResolveTowerFall();
+        ResolveTowerFall(struckOut);
         if (!MatchOver) Settle();
     }
 
@@ -750,6 +784,7 @@ public class TurnStateMachine
             p.heldBlock = null;
             p.peakHeight = 0;
             p.baseSpace = -1;
+            p.strikes = 0;   // R-27: strikes reset every game
         }
         State.tower.Clear();
         if (State.useRulesheet)

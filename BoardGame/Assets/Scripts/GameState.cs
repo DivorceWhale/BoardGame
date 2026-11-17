@@ -7,6 +7,7 @@ public class PlayerState
     public bool inGame = true;
     public bool fellThisShake;
     public int matchPoints;
+    public int strikes;          // R-27: blocks this player placed that fell off the tower this game
     public int peakHeight;       // highest tower height this game (for consolation points)
     public int baseSpace = -1;   // space of this player's first block this game (their tower's base)
     public CardData heldBlock;

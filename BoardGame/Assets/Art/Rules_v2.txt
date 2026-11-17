@@ -41,6 +41,8 @@ A block has come down if it fell off the base, or dropped half a block or more.
 
 Until then the game goes on. Blocks that fall off are set aside, and they count toward the collapse.
 
+<b>Strikes:</b> if a block you placed falls off the tower and the tower still stands, you take a strike. With <b>3 strikes you lose</b> that game, and everyone else scores 1 point. Strikes reset every game.
+
 <b>First to 3 points wins the match.</b> If several players reach 3 at the same time, they share the win.
 
 ## Edge Cases

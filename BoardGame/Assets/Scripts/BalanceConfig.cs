@@ -29,6 +29,8 @@ public class BalanceConfig : ScriptableObject
     [Min(1)] public int pointsPerGameWin = 1;
     [Tooltip("Points needed to win the match.")]
     [Min(1)] public int pointsToWinMatch = 3;
+    [Tooltip("R-27 (team rule change): strikes that lose a player the game. A player takes a strike when a block they placed falls off the tower.")]
+    [Min(1)] public int strikesToLose = 3;
 
     [Header("Decks")]
     [Tooltip("Copies of each event card in the event deck. (Block cards: set copies on each block card asset.)")]

@@ -216,7 +216,13 @@ public partial class QuakerPlay
                 Cover("next game started");
                 Cover(lastWasShake ? "collapse during shake" : "collapse while placing");
                 CheckScores(pointsBefore);
-                if (!lastCollapse.Contains("come down") && !lastCollapse.Contains("No block")) Conflict("game ended without a collapse reason: '" + lastCollapse + "'");
+                bool strikeOut = lastCollapse.Contains("strikes:");   // R-27: a game can also end on three strikes
+                if (strikeOut)
+                {
+                    foreach (int i in machine.LastLosers)
+                        if (s.players[i].strikes != 0) Conflict("strikes were not reset for the new game (" + s.players[i].name + ": " + s.players[i].strikes + ")");
+                }
+                else if (!lastCollapse.Contains("come down") && !lastCollapse.Contains("No block")) Conflict("game ended without a collapse reason: '" + lastCollapse + "'");
                 Press(nextButton);
                 if (t.eventCardsLeft >= 0) StageDeck(s.eventDeck, t.eventCardsLeft);
                 yield return null;
@@ -657,7 +663,8 @@ public partial class QuakerPlay
             if (delta == 0 || delta == -1) { losers++; if (delta == -1) Cover("event 20 point lost"); continue; }
             Conflict("odd score change: " + d);
         }
-        if (losers != 1) Conflict("a game must have exactly one loser, but the points changed: " + d.Trim());
+        int expected = Mathf.Max(1, machine.LastLosers.Count);   // R-27: players who strike out together all lose
+        if (losers != expected) Conflict("a game must have " + expected + " loser(s), but the points changed: " + d.Trim());
     }
 
     // Cards are never lost or duplicated.

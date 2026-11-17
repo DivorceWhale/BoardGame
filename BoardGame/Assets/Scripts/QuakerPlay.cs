@@ -578,6 +578,7 @@ public partial class QuakerPlay : MonoBehaviour
         setupPanel.SetActive(true);
         overPanel.SetActive(false);
         gameOverPanel.SetActive(false);
+        ClearNames();   // a new match always starts with empty names
         SetPlayerCount(setupCount);
         RefreshSpaceColors();   // back to the plain tower base behind the setup screen
     }
@@ -594,6 +595,12 @@ public partial class QuakerPlay : MonoBehaviour
             cb.selectedColor = cb.normalColor;
             countButtons[i].colors = cb;
         }
+    }
+
+    // Empty every name field, so no names carry over from the last match or the last session.
+    void ClearNames()
+    {
+        foreach (TMP_InputField f in nameFields) if (f != null) f.text = "";
     }
 
     // Swap two names, so players can change who goes first.
@@ -1360,12 +1367,9 @@ public partial class QuakerPlay : MonoBehaviour
             int n = i + 2;
             countButtons[i].onClick.AddListener(() => SetPlayerCount(n));
         }
-        for (int i = 0; i < nameFields.Count; i++)
-        {
-            string saved = "";
-            try { saved = PlayerPrefs.GetString("QuakerName" + i, ""); } catch { }
-            nameFields[i].text = saved;
-        }
+        // Names are never kept: every match starts with empty name fields (see ClearNames).
+        for (int i = 0; i < 4; i++) { try { PlayerPrefs.DeleteKey("QuakerName" + i); } catch { } }   // names saved by older builds
+        ClearNames();
         for (int i = 0; i < upButtons.Count; i++)
         {
             int k = i;

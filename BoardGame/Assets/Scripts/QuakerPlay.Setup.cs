@@ -156,7 +156,6 @@ public partial class QuakerPlay
             string n = PlayerName(i);
             for (int j = 0; j < i; j++) if (s.players[j].name == n) n += " " + (i + 1);   // keep names apart
             s.players[i].name = n;
-            PlayerPrefs.SetString("QuakerName" + i, i < nameFields.Count ? nameFields[i].text : "");
         }
         PlayerPrefs.Save();
         FixPlayerColors(playerCount);

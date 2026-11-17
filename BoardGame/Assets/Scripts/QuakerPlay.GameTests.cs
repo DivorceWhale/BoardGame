@@ -124,7 +124,6 @@ public partial class QuakerPlay
         newSeedEachGame = oldSeedMode;
         for (int i = 0; i < 4 && i < nameFields.Count; i++) nameFields[i].text = oldNames[i];
         for (int i = 0; i < 4; i++) setupColor[i] = oldColors[i];
-        for (int i = 0; i < 4; i++) PlayerPrefs.SetString("QuakerName" + i, oldNames[i]);
         SaveColors();
         ShowSetupColors();
         ClearBlocks();

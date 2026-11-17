@@ -29,7 +29,7 @@ public class BalanceConfig : ScriptableObject
     [Min(1)] public int pointsPerGameWin = 1;
     [Tooltip("Points needed to win the match.")]
     [Min(1)] public int pointsToWinMatch = 3;
-    [Tooltip("R-27 (team rule change): strikes that lose a player the game. A player takes a strike when a block they placed falls off the tower.")]
+    [Tooltip("R-27 (team rule change): strikes that lose a player the game. A player takes a strike when the block they are placing falls off the tower (not in a shake).")]
     [Min(1)] public int strikesToLose = 3;
 
     [Header("Decks")]

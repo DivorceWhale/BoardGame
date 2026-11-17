@@ -429,9 +429,11 @@ public partial class QuakerPlay : MonoBehaviour
     // Wait for the blocks to settle, set aside anything that fell off the base, then let the rules decide:
     // the tower has fallen if it collapsed (see collapseShare) or nothing is left on the base.
     // before: the tower before the shake; null = before this placement (everything but the newest block).
-    IEnumerator SettleThenCheck(bool roundCheck, Dictionary<Rigidbody, float> before = null)
+    // placedBy: the player whose placement this settle follows, or -1 after a shake. R-27 strikes only come from placing.
+    IEnumerator SettleThenCheck(bool roundCheck, Dictionary<Rigidbody, float> before = null, int placedBy = -1)
     {
         busy = true;
+        Rigidbody justPlaced = placedBy >= 0 && placed.Count > 0 ? placed[placed.Count - 1] : null;
         Refresh();
         if (before == null) before = TowerSnapshot(placed.Count > 0 ? placed[placed.Count - 1] : null);
         float t0 = Time.time;
@@ -440,13 +442,14 @@ public partial class QuakerPlay : MonoBehaviour
 
         int blocksBefore = placed.Count;
         int fallen = 0;
-        List<int> fellFrom = new List<int>();   // the player who placed each block that fell off (R-27)
+        List<int> fellFrom = new List<int>();   // R-27: the placer, if the block they just placed fell off
         for (int i = placed.Count - 1; i >= 0; i--)
         {
             if (OnTower(placed[i])) continue;
             fallen++;
             int owner;
-            if (blockOwner.TryGetValue(placed[i], out owner)) { fellFrom.Add(owner); blockOwner.Remove(placed[i]); }
+            if (blockOwner.TryGetValue(placed[i], out owner) && placed[i] == justPlaced) fellFrom.Add(owner);   // never from a shake
+            blockOwner.Remove(placed[i]);
             SetAside(placed[i]);
             placed.RemoveAt(i);
         }
@@ -474,7 +477,7 @@ public partial class QuakerPlay : MonoBehaviour
             if (fallen > 0) Add("  " + fallen + " block" + (fallen == 1 ? "" : "s") + " fell off but the tower is still standing. They are set aside (section 7).");
             if (cameDown > 0 && !collapsed) Add("  " + cameDown + " of the " + towerPeak + " blocks the tower reached have come down so far; not a collapse yet.");
 
-            // R-27: every block that fell off is a strike for the player who placed it. At the limit, they lose the game.
+            // R-27: the block a player just placed fell off the tower: a strike for them. At the limit, they lose the game.
             List<int> struckOut = new List<int>();
             foreach (int owner in fellFrom)
             {
@@ -902,7 +905,7 @@ public partial class QuakerPlay : MonoBehaviour
 
         notice = "";
         SetGhost(null);
-        if (s.gameNumber == gameBefore) StartCoroutine(SettleThenCheck(false));
+        if (s.gameNumber == gameBefore) StartCoroutine(SettleThenCheck(false, null, aimed.player));
     }
 
     struct Level

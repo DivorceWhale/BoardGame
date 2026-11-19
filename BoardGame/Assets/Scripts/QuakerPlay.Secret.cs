@@ -33,6 +33,7 @@ public partial class QuakerPlay
         offset.y = 0f;
         duck.transform.position = new Vector3(from.x, duck.transform.position.y, from.z) + offset + lift;
 
+        GameSounds.Play(GameSound.SecretCard);   // here it comes
         Rigidbody body = duck.AddComponent<Rigidbody>();
         body.isKinematic = true;
         body.interpolation = RigidbodyInterpolation.Interpolate;
@@ -165,7 +166,7 @@ public partial class QuakerPlay
             sign.enabled = on;
             word.enabled = on;
             glow.color = new Color(0.9f, 0.05f, 0.05f, on ? 0.22f : 0.06f);
-            if (on && !lastOn) GameSounds.Play(GameSound.TurnBanner, 0.9f);   // a beep on every flash
+            if (on && !lastOn) GameSounds.Play(GameSound.Warning);   // a beep on every flash
             lastOn = on;
             yield return null;
         }

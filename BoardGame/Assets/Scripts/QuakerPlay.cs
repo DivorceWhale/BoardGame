@@ -483,7 +483,8 @@ public partial class QuakerPlay : MonoBehaviour
             {
                 int n = machine.AddStrike(owner);
                 if (n >= B.strikesToLose) { if (!struckOut.Contains(owner)) struckOut.Add(owner); }
-                else QueueBanner("Strike " + n + " of " + B.strikesToLose, s.players[owner].name + "\u2019s block fell off the tower", PlayerColor(owner));
+                else GameSounds.Play(GameSound.Strike);
+                if (n < B.strikesToLose) QueueBanner("Strike " + n + " of " + B.strikesToLose, s.players[owner].name + "\u2019s block fell off the tower", PlayerColor(owner));
             }
             if (struckOut.Count > 0)
             {

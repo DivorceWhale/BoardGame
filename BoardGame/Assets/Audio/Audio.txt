@@ -1,1 +1,10 @@
-Audio goes here
+Put the sound files you find here (.wav, .mp3 or .ogg).
+
+Then open QUAKER > Sounds > Open Sound Library (Assets/Resources/QuakerSounds.asset) and drag each file into the
+slot for its event, for example Block Place, Collapse or Secret Card. A slot can hold several clips: one is picked
+at random each time. Each slot has its own volume and a little random pitch change.
+
+Menu Music plays on the start menu; Game Music plays during a match (leave it empty to keep the menu music).
+Empty slots play a simple placeholder sound; untick Placeholder Sounds to make them silent instead.
+
+Write down where each sound came from for the credit note.

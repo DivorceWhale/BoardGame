@@ -1,13 +1,9 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// Build 9: every sound in the game goes through here. Put one on an object in the scene, then drop audio clips
-// into the slots in the Inspector (Assets/Audio is the place for the files). A slot with several clips picks one
-// at random each time, so repeated sounds don't feel mechanical.
-// Until a slot has a clip, a simple made-up placeholder sound plays, so every event is audible right away.
-// Other scripts call GameSounds.Play(GameSound.BlockPlace) and so on; it does nothing if there is no GameSounds.
+// Every sound event in the game. New ones go at the END, so the slots already filled in keep their sound.
 public enum GameSound
 {
     ButtonClick,    // any UI button
@@ -21,85 +17,81 @@ public enum GameSound
     TurnBanner,     // the turn passes / a banner appears
     GameOver,       // a game ends
     MatchWin,       // the match is won
+    Warning,        // the flashing warning sign before the secret card (one beep per flash)
+    SecretCard,     // the giant rubber duck flies in
+    Strike,         // a player takes a strike (R-27)
 }
 
+// The audio manager. The sounds themselves are set in the Sound Library (Resources/QuakerSounds.asset); this plays
+// them. It starts by itself in every scene and stays between scenes, so music carries on from the menu into the game.
+// Other scripts call GameSounds.Play(GameSound.BlockPlace) and so on.
 public class GameSounds : MonoBehaviour
 {
-    [Serializable]
-    public class Slot
-    {
-        public GameSound sound;
-        [Tooltip("One clip, or several to pick from at random.")]
-        public AudioClip[] clips = new AudioClip[0];
-        [Range(0f, 1f)] public float volume = 0.8f;
-        [Tooltip("Random pitch change each time (0.1 = up to 10% higher or lower).")]
-        [Range(0f, 0.5f)] public float pitchVariation = 0.05f;
-    }
-
-    [Header("Volume")]
-    [Range(0f, 1f)] public float masterVolume = 0.8f;
-    [Range(0f, 1f)] public float effectsVolume = 1f;
-    [Range(0f, 1f)] public float musicVolume = 0.4f;
-    [Tooltip("Play simple made-up sounds for slots that have no clip yet.")]
-    public bool placeholderSounds = true;
-
-    [Header("Music (optional, loops)")]
-    public AudioClip music;
-
-    [Header("Sound effects")]
-    public List<Slot> slots = new List<Slot>();
-
-    [Header("Block hits")]
-    [Tooltip("Hits softer than this (impact speed) make no sound.")]
-    public float minHitSpeed = 1.5f;
-    [Tooltip("Impact speed that plays a hit at full volume.")]
-    public float fullHitSpeed = 8f;
-
     public static GameSounds Instance { get; private set; }
 
     readonly List<AudioSource> pool = new List<AudioSource>();
     readonly Dictionary<GameSound, AudioClip> placeholders = new Dictionary<GameSound, AudioClip>();
     readonly Dictionary<GameSound, float> lastPlayed = new Dictionary<GameSound, float>();
+    readonly HashSet<Button> wired = new HashSet<Button>();
     AudioSource loopSource, musicSource;
 
-    // Fills in a slot for every sound, so the Inspector always shows the full list.
-    void Reset() { EnsureSlots(); }
-    void OnValidate() { EnsureSlots(); }
+    static SoundLibrary Lib { get { return SoundLibrary.Current; } }
 
-    public void EnsureSlots()
+    // Starts the manager in whatever scene the game opens with (a scene doesn't need its own GameSounds).
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void Boot()
     {
-        foreach (GameSound g in Enum.GetValues(typeof(GameSound)))
-            if (slots.Find(s => s.sound == g) == null) slots.Add(new Slot { sound = g });
+        if (Instance == null) new GameObject("Game Sounds").AddComponent<GameSounds>();
     }
 
     void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }   // one for the whole game
         Instance = this;
-        EnsureSlots();
+        transform.SetParent(null);
+        DontDestroyOnLoad(gameObject);
+        Lib.EnsureSlots();
         for (int i = 0; i < 8; i++) pool.Add(NewSource("Effect " + (i + 1)));
         loopSource = NewSource("Loop");
         loopSource.loop = true;
         musicSource = NewSource("Music");
         musicSource.loop = true;
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        OnSceneLoaded(SceneManager.GetActiveScene(), LoadSceneMode.Single);
     }
 
     void OnDestroy()
     {
-        if (Instance == this) Instance = null;
+        if (Instance != this) return;
+        Instance = null;
+        SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 
-    void Start()
+    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        // Every button in the scene clicks, including ones on hidden panels.
-        foreach (Button b in FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
-            b.onClick.AddListener(() => Play(GameSound.ButtonClick));
-        if (music != null) { musicSource.clip = music; musicSource.Play(); }
+        StopLoop();
+        WireButtons();
+        // The menu scene plays the menu music; game scenes play the game music (or keep the menu music if none is set).
+        bool menu = false;
+        foreach (QuakerPlay q in FindObjectsByType<QuakerPlay>(FindObjectsSortMode.None)) if (q.menuScene) menu = true;
+        AudioClip want = menu ? Lib.menuMusic : (Lib.gameMusic != null ? Lib.gameMusic : Lib.menuMusic);
+        if (want != null && musicSource.clip != want) { musicSource.clip = want; musicSource.Play(); }
+        if (want == null) musicSource.Stop();
     }
 
+    // Every button clicks, including ones on hidden panels and ones made later (checked again every second).
+    void WireButtons()
+    {
+        wired.RemoveWhere(b => b == null);
+        foreach (Button b in FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (wired.Add(b)) b.onClick.AddListener(() => Play(GameSound.ButtonClick));
+    }
+
+    float nextWire;
     void Update()
     {
-        if (musicSource != null) musicSource.volume = masterVolume * musicVolume;
+        if (musicSource != null) musicSource.volume = Lib.masterVolume * Lib.musicVolume;
+        if (Time.unscaledTime >= nextWire) { nextWire = Time.unscaledTime + 1f; WireButtons(); }
     }
 
     AudioSource NewSource(string name)
@@ -124,11 +116,11 @@ public class GameSounds : MonoBehaviour
     {
         if (Instance == null) return;
         GameSounds g = Instance;
-        Slot slot = g.SlotFor(sound);
+        SoundLibrary.Slot slot = Lib.SlotFor(sound);
         AudioClip clip = g.ClipFor(sound, slot);
         if (clip == null) return;
         g.loopSource.clip = clip;
-        g.loopSource.volume = g.masterVolume * g.effectsVolume * (slot != null ? slot.volume : 0.8f);
+        g.loopSource.volume = Lib.masterVolume * Lib.effectsVolume * (slot != null ? slot.volume : 0.8f);
         g.loopSource.pitch = 1f;
         if (!g.loopSource.isPlaying) g.loopSource.Play();
     }
@@ -142,10 +134,12 @@ public class GameSounds : MonoBehaviour
     public static void Hit(float impactSpeed)
     {
         if (Instance == null) return;
-        GameSounds g = Instance;
-        if (impactSpeed < g.minHitSpeed) return;
-        g.PlayNow(GameSound.BlockHit, Mathf.InverseLerp(g.minHitSpeed, g.fullHitSpeed, impactSpeed) * 0.85f + 0.15f);
+        if (impactSpeed < Lib.minHitSpeed) return;
+        Instance.PlayNow(GameSound.BlockHit, Mathf.InverseLerp(Lib.minHitSpeed, Lib.fullHitSpeed, impactSpeed) * 0.85f + 0.15f);
     }
+
+    // The clip that played last for a sound (for checking a slot from a test or the Console).
+    public string LastClip { get; private set; }
 
     void PlayNow(GameSound sound, float volumeScale)
     {
@@ -154,31 +148,27 @@ public class GameSounds : MonoBehaviour
         if (lastPlayed.TryGetValue(sound, out last) && Time.unscaledTime - last < 0.04f) return;
         lastPlayed[sound] = Time.unscaledTime;
 
-        Slot slot = SlotFor(sound);
+        SoundLibrary.Slot slot = Lib.SlotFor(sound);
         AudioClip clip = ClipFor(sound, slot);
         if (clip == null) return;
         AudioSource src = FreeSource();
         src.clip = clip;
-        src.volume = masterVolume * effectsVolume * (slot != null ? slot.volume : 0.8f) * Mathf.Clamp01(volumeScale);
+        src.volume = Lib.masterVolume * Lib.effectsVolume * (slot != null ? slot.volume : 0.8f) * Mathf.Clamp01(volumeScale);
         float v = slot != null ? slot.pitchVariation : 0.05f;
-        src.pitch = 1f + UnityEngine.Random.Range(-v, v);
+        src.pitch = 1f + Random.Range(-v, v);
         src.Play();
+        LastClip = sound + ": " + clip.name;
     }
 
-    Slot SlotFor(GameSound sound)
-    {
-        return slots.Find(s => s.sound == sound);
-    }
-
-    AudioClip ClipFor(GameSound sound, Slot slot)
+    AudioClip ClipFor(GameSound sound, SoundLibrary.Slot slot)
     {
         if (slot != null && slot.clips != null)
         {
             List<AudioClip> usable = new List<AudioClip>();
             foreach (AudioClip c in slot.clips) if (c != null) usable.Add(c);
-            if (usable.Count > 0) return usable[UnityEngine.Random.Range(0, usable.Count)];
+            if (usable.Count > 0) return usable[Random.Range(0, usable.Count)];
         }
-        return placeholderSounds ? Placeholder(sound) : null;
+        return Lib.placeholderSounds ? Placeholder(sound) : null;
     }
 
     AudioSource FreeSource()
@@ -209,6 +199,9 @@ public class GameSounds : MonoBehaviour
             case GameSound.TurnBanner:  c = Tone("banner", 0.3f, 660f, 660f, 0.0f, 9f); break;
             case GameSound.GameOver:    c = Tone("game over", 0.8f, 440f, 220f, 0.1f, 4f); break;
             case GameSound.MatchWin:    c = Tone("match win", 1.0f, 440f, 880f, 0.0f, 3f); break;
+            case GameSound.Warning:     c = Tone("warning", 0.16f, 920f, 880f, 0.05f, 6f); break;     // an alarm beep
+            case GameSound.SecretCard:  c = Tone("quack", 0.3f, 420f, 260f, 0.35f, 7f); break;        // a rough quack
+            case GameSound.Strike:      c = Tone("strike", 0.35f, 240f, 110f, 0.2f, 6f); break;
         }
         placeholders[sound] = c;
         return c;

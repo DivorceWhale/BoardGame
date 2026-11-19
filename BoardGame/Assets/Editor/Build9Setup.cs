@@ -118,20 +118,10 @@ public static class Build9Setup
         Debug.Log("[Quaker] Build-9 ready: a copy of Build-9o with no scenario picker.");
     }
 
-    [MenuItem("QUAKER/Build 9/Select Game Sounds")]
-    public static void SelectSounds()
-    {
-        GameSounds g = Object.FindFirstObjectByType<GameSounds>();
-        if (g == null) { EditorUtility.DisplayDialog("Quaker", "Open Build-9.unity first (no GameSounds in this scene).", "OK"); return; }
-        Selection.activeObject = g;
-        EditorGUIUtility.PingObject(g);
-    }
-
+    // The sounds live in the Sound Library asset now (QUAKER > Sounds > Open Sound Library); GameSounds starts by
+    // itself in every scene, so a scene doesn't need its own.
     static void AddGameSounds()
     {
-        GameSounds g = Object.FindFirstObjectByType<GameSounds>();
-        if (g == null) g = new GameObject("Game Sounds").AddComponent<GameSounds>();
-        g.EnsureSlots();
-        EditorUtility.SetDirty(g);
+        SoundLibraryMenu.Library();
     }
 }

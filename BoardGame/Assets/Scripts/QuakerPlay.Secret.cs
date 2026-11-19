@@ -157,8 +157,8 @@ public partial class QuakerPlay
         word.outlineColor = new Color32(0x3A, 0x06, 0x06, 0xFF);
         word.characterSpacing = 12f;
 
+        GameSounds.StartLoop(GameSound.Warning);   // the alarm sounds the whole time the sign flashes
         float t0 = Time.time;
-        bool lastOn = false;
         while (Time.time - t0 < seconds)
         {
             float t = Time.time - t0;
@@ -166,10 +166,9 @@ public partial class QuakerPlay
             sign.enabled = on;
             word.enabled = on;
             glow.color = new Color(0.9f, 0.05f, 0.05f, on ? 0.22f : 0.06f);
-            if (on && !lastOn) GameSounds.Play(GameSound.Warning);   // a beep on every flash
-            lastOn = on;
             yield return null;
         }
+        GameSounds.StopLoop(GameSound.Warning);
         Destroy(root);
     }
 

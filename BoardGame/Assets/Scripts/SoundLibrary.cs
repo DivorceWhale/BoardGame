@@ -28,6 +28,11 @@ public class SoundLibrary : ScriptableObject
     [Tooltip("Play simple made-up sounds for slots that have no clip yet. Off = empty slots are silent.")]
     public bool placeholderSounds = true;
 
+    [Header("Debug")]
+    [Tooltip("Write a line to the Console every time a sound plays, a loop starts or a loop stops: which event, which clip, "
+        + "and the time. Use it to find out which sound you are hearing.")]
+    public bool logSounds = false;
+
     [Header("Music (loops; keeps playing from the menu into the game)")]
     public AudioClip menuMusic;
     [Tooltip("Played during a match. Leave empty to keep the menu music going.")]

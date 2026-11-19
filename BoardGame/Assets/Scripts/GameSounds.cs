@@ -17,7 +17,7 @@ public enum GameSound
     TurnBanner,     // the turn passes / a banner appears
     GameOver,       // a game ends
     MatchWin,       // the match is won
-    Warning,        // the flashing warning sign before the secret card (one beep per flash)
+    Warning,        // the flashing warning sign before the secret card (loops while it flashes)
     SecretCard,     // the giant rubber duck flies in
     Strike,         // a player takes a strike (R-27)
 }
@@ -33,7 +33,9 @@ public class GameSounds : MonoBehaviour
     readonly Dictionary<GameSound, AudioClip> placeholders = new Dictionary<GameSound, AudioClip>();
     readonly Dictionary<GameSound, float> lastPlayed = new Dictionary<GameSound, float>();
     readonly HashSet<Button> wired = new HashSet<Button>();
-    AudioSource loopSource, musicSource;
+    // Each looping sound has its own speaker, so the shake rumble and the warning alarm never cut each other off.
+    readonly Dictionary<GameSound, AudioSource> loops = new Dictionary<GameSound, AudioSource>();
+    AudioSource musicSource;
 
     static SoundLibrary Lib { get { return SoundLibrary.Current; } }
 
@@ -52,8 +54,6 @@ public class GameSounds : MonoBehaviour
         DontDestroyOnLoad(gameObject);
         Lib.EnsureSlots();
         for (int i = 0; i < 8; i++) pool.Add(NewSource("Effect " + (i + 1)));
-        loopSource = NewSource("Loop");
-        loopSource.loop = true;
         musicSource = NewSource("Music");
         musicSource.loop = true;
         SceneManager.sceneLoaded += OnSceneLoaded;
@@ -111,7 +111,7 @@ public class GameSounds : MonoBehaviour
         if (Instance != null) Instance.PlayNow(sound, volumeScale);
     }
 
-    // The rumble while the board shakes.
+    // A sound that repeats until it is stopped: the shake rumble, the warning alarm.
     public static void StartLoop(GameSound sound)
     {
         if (Instance == null) return;
@@ -119,15 +119,64 @@ public class GameSounds : MonoBehaviour
         SoundLibrary.Slot slot = Lib.SlotFor(sound);
         AudioClip clip = g.ClipFor(sound, slot);
         if (clip == null) return;
-        g.loopSource.clip = clip;
-        g.loopSource.volume = Lib.masterVolume * Lib.effectsVolume * (slot != null ? slot.volume : 0.8f);
-        g.loopSource.pitch = 1f;
-        if (!g.loopSource.isPlaying) g.loopSource.Play();
+        AudioSource src;
+        if (!g.loops.TryGetValue(sound, out src) || src == null)
+        {
+            src = g.NewSource("Loop: " + sound);
+            src.loop = true;
+            g.loops[sound] = src;
+        }
+        src.volume = Lib.masterVolume * Lib.effectsVolume * (slot != null ? slot.volume : 0.8f);
+        src.pitch = 1f;
+        if (src.isPlaying && src.clip == clip) return;
+        src.clip = clip;
+        src.Play();
+        Log("loop starts", sound, clip);
     }
 
+    // Stops one looping sound.
+    public static void StopLoop(GameSound sound)
+    {
+        AudioSource src;
+        if (Instance != null && Instance.loops.TryGetValue(sound, out src) && src != null && src.isPlaying)
+        {
+            src.Stop();
+            Log("loop stops", sound, src.clip);
+        }
+    }
+
+    // Stops every looping sound (a new match, back to the menu, a new scene).
     public static void StopLoop()
     {
-        if (Instance != null && Instance.loopSource != null) Instance.loopSource.Stop();
+        if (Instance == null) return;
+        foreach (KeyValuePair<GameSound, AudioSource> kv in Instance.loops)
+            if (kv.Value != null && kv.Value.isPlaying) { kv.Value.Stop(); Log("loop stops (all)", kv.Key, kv.Value.clip); }
+    }
+
+    // Sound Library > Debug > Log Sounds: one Console line per sound, e.g.
+    // [Sound 12.40s] Warning loop starts: 423929__severe-warning-alarm   (from QuakerPlay.FlashWarning)
+    static void Log(string what, GameSound sound, AudioClip clip)
+    {
+        if (!Lib.logSounds) return;
+        string from = "";
+        System.Diagnostics.StackTrace st = new System.Diagnostics.StackTrace(2, false);   // who asked for the sound
+        for (int i = 0; i < st.FrameCount; i++)
+        {
+            System.Reflection.MethodBase m = st.GetFrame(i).GetMethod();
+            if (m == null || m.DeclaringType == typeof(GameSounds)) continue;
+            string type = m.DeclaringType != null ? m.DeclaringType.Name : "";
+            int lt = type.IndexOf('<'), gt = type.IndexOf('>');   // a coroutine shows up as <FlashWarning>d__12
+            from = lt >= 0 && gt > lt ? "QuakerPlay." + type.Substring(lt + 1, gt - lt - 1) : type + "." + m.Name;
+            break;
+        }
+        Debug.Log("[Sound " + Time.time.ToString("0.00") + "s] " + sound + " " + what + ": " + (clip != null ? clip.name : "none")
+            + (from.Length > 0 ? "   (from " + from + ")" : ""));
+    }
+
+    public static bool IsLooping(GameSound sound)
+    {
+        AudioSource src;
+        return Instance != null && Instance.loops.TryGetValue(sound, out src) && src != null && src.isPlaying;
     }
 
     // A block hit something: the harder the hit, the louder.
@@ -158,6 +207,7 @@ public class GameSounds : MonoBehaviour
         src.pitch = 1f + Random.Range(-v, v);
         src.Play();
         LastClip = sound + ": " + clip.name;
+        Log("plays", sound, clip);
     }
 
     AudioClip ClipFor(GameSound sound, SoundLibrary.Slot slot)

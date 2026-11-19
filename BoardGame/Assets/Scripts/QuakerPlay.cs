@@ -611,7 +611,7 @@ public partial class QuakerPlay : MonoBehaviour
             Refresh();
             while (Time.time < shakeEndsAt) yield return null;
             shaking = false;
-            GameSounds.StopLoop();
+            GameSounds.StopLoop(GameSound.ShakeLoop);
             if (shakeNumber < count) yield return new WaitForSeconds(0.8f);   // back to back, with a breath between
         }
         shakeSpeed = 1f;

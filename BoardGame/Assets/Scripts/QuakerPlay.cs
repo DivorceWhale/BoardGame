@@ -1129,7 +1129,7 @@ public partial class QuakerPlay : MonoBehaviour
         if (r.legal && a.type == ActionType.DrawEventCard) GameSounds.Play(GameSound.EventFlip);
         if (r.legal) OnActionDone(a);   // banners about other players (QuakerPlay.Turns.cs)
         if (r.legal && a.type == ActionType.DrawEventCard) CoffeeBreakDraws();
-        if (r.legal && a.type == ActionType.DrawEventCard && TurnStateMachine.IsSecretCard(s.eventCard)) StartCoroutine(WreckingBall());   // QuakerPlay.Secret.cs
+        if (r.legal && a.type == ActionType.DrawEventCard && TurnStateMachine.IsSecretCard(s.eventCard)) StartCoroutine(SecretCardStrike());   // QuakerPlay.Secret.cs
         notice = r.legal ? "" : r.ToString();
         AfterMove();
     }

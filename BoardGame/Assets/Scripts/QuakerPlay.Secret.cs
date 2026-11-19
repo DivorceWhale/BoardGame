@@ -1,46 +1,61 @@
 using System.Collections;
 using UnityEngine;
 
-// The secret card (digital only): Wrecking Ball. When an event flip turns up the secret card (QuakerBalance:
-// secretCardOn, secretCardChance), a wrecking ball drops onto the tower and knocks every block off the tower base.
-// The tower has collapsed, so the game ends the usual way (R-16): whoever placed the most recent block loses.
-// Blocks knocked off by the ball are never strikes (R-27 is only about placing).
+// The secret card (digital only). When an event flip turns up the secret card (QuakerBalance: secretCardOn,
+// secretCardChance), a giant rubber duck (QuakerBalance: secretCardProp, Prop_RubberDuck) flies across the table
+// straight through the tower and knocks every block off the tower base. The tower has collapsed, so the game ends
+// the usual way (R-16): whoever placed the most recent block loses. Blocks it knocks off are never strikes (R-27).
 public partial class QuakerPlay
 {
-    IEnumerator WreckingBall()
+    const float DuckLengthInCells = 3.5f;   // the duck is about 3.5 blocks long: big enough to clear the 4 x 4 base
+    const float DuckSpeed = 28f;            // units per second
+    const float DuckRunUp = 34f;            // how far from the tower it starts and ends
+
+    IEnumerator SecretCardStrike()
     {
         busy = true;
-        Add("  SECRET CARD: a wrecking ball drops on the tower.");
-        QueueBanner("Secret card: Wrecking Ball!", "A wrecking ball drops on the site. The whole tower comes down.", new Color(1f, 0.35f, 0.25f));
+        string title = s.eventCard != null ? s.eventCard.title : "Secret card";
+        Add("  SECRET CARD: " + title + " flies through the tower.");
+        QueueBanner("Secret card: " + title + "!", "It flies straight through the tower. The whole tower comes down.", new Color(1f, 0.85f, 0.2f));
         yield return new WaitForSeconds(1.2f);   // let everyone read the card
 
-        // The ball: big and heavy, dropped from high above the centre of the tower base.
-        float top = baseTop;
-        foreach (Rigidbody rb in placed) if (rb != null) top = Mathf.Max(top, RenderBounds(rb.gameObject).max.y);
-        GameObject ball = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        ball.name = "Wrecking Ball";
-        float size = cell * 2.2f;
-        ball.transform.localScale = Vector3.one * size;
-        ball.transform.position = baseCentre + Vector3.up * (top - baseTop + size + 30f);
-        Renderer br = ball.GetComponent<Renderer>();
-        if (br != null)
+        // Fly across the screen, left to right as the players see it, at the height of the bottom of the tower.
+        Vector3 dir = Camera.main != null ? Camera.main.transform.right : Vector3.right;
+        dir.y = 0f;
+        dir = dir.sqrMagnitude > 0.01f ? dir.normalized : Vector3.right;
+
+        GameObject duck = SpawnSecretProp();
+        duck.transform.rotation = Quaternion.LookRotation(dir, Vector3.up);   // the duck's beak points along +z
+        Bounds db = RenderBounds(duck);
+        Vector3 lift = Vector3.up * (baseTop + 0.3f - db.min.y);              // its belly just above the tower base
+        Vector3 from = baseCentre - dir * DuckRunUp, to = baseCentre + dir * DuckRunUp;
+        Vector3 offset = duck.transform.position - db.center;                 // move by its middle, not its pivot
+        offset.y = 0f;
+        duck.transform.position = new Vector3(from.x, duck.transform.position.y, from.z) + offset + lift;
+
+        Rigidbody body = duck.AddComponent<Rigidbody>();
+        body.isKinematic = true;
+        body.interpolation = RigidbodyInterpolation.Interpolate;
+        body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+
+        // The flight: straight through, with a little bob and waddle.
+        Vector3 start = duck.transform.position, end = start + (to - from);
+        Quaternion facing = duck.transform.rotation;
+        float seconds = (to - from).magnitude / DuckSpeed, t = 0f;
+        bool hit = false;
+        while (t < seconds)
         {
-            Material m = br.material;
-            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(0.16f, 0.16f, 0.18f));
-            if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0.8f);
-            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.6f);
+            yield return new WaitForFixedUpdate();
+            t += Time.fixedDeltaTime;
+            float k = Mathf.Clamp01(t / seconds);
+            Vector3 p = Vector3.Lerp(start, end, k) + Vector3.up * (Mathf.Sin(t * 9f) + 1f) * 0.3f;   // bobs up, never into the base
+            body.MovePosition(p);
+            body.MoveRotation(facing * Quaternion.Euler(0f, 0f, Mathf.Sin(t * 12f) * 8f));
+            if (!hit && k >= 0.4f) { hit = true; GameSounds.Play(GameSound.Collapse); }
         }
-        Rigidbody ballBody = ball.AddComponent<Rigidbody>();
-        ballBody.mass = blockMass * 80f;
-        ballBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        ballBody.linearVelocity = Vector3.down * 25f;
+        Destroy(duck);
 
-        // Wait for it to reach the tower (or the base, if the tower is low).
-        float t0 = Time.time;
-        while (Time.time - t0 < 3f && ball.transform.position.y - size * 0.5f > top + 0.5f) yield return null;
-        GameSounds.Play(GameSound.Collapse);
-
-        // The impact: everything still on the tower base is thrown outward, until nothing is left on it.
+        // Anything the duck missed is swept off the same way, until nothing is left on the tower base.
         for (int pass = 0; pass < 4; pass++)
         {
             bool any = false;
@@ -48,19 +63,35 @@ public partial class QuakerPlay
             {
                 if (rb == null || !OnTower(rb)) continue;
                 any = true;
-                Vector3 away = rb.worldCenterOfMass - baseCentre;
-                away.y = 0f;
-                if (away.sqrMagnitude < 0.01f) away = Random.insideUnitCircle.normalized;   // a block right in the middle
-                Vector3 push = away.normalized * 14f + Vector3.up * 6f + Random.insideUnitSphere * 2f;
-                rb.AddForce(push, ForceMode.VelocityChange);
+                rb.AddForce(dir * 14f + Vector3.up * 5f + Random.insideUnitSphere * 2f, ForceMode.VelocityChange);
                 rb.AddTorque(Random.insideUnitSphere * 8f, ForceMode.VelocityChange);
             }
             if (!any) break;
             yield return new WaitForSeconds(1.2f);
         }
-        Destroy(ball, 1.5f);
 
         // The usual check: every block is off the base, so the tower has collapsed (R-16).
         yield return SettleThenCheck(false);
+    }
+
+    // The prop from QuakerBalance, scaled up so it is about DuckLengthInCells blocks long, with one box collider.
+    GameObject SpawnSecretProp()
+    {
+        GameObject prefab = B.secretCardProp;
+        GameObject model = prefab != null ? Instantiate(prefab) : GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        model.name = "Secret card: " + (prefab != null ? prefab.name : "ball");
+        foreach (Collider c in model.GetComponentsInChildren<Collider>()) Destroy(c);
+
+        Bounds b = RenderBounds(model);
+        float longest = Mathf.Max(b.size.x, b.size.z, 0.01f);
+        model.transform.localScale *= cell * DuckLengthInCells / longest;
+
+        // One solid box around the whole duck, so it pushes blocks the way you'd expect.
+        Bounds world = RenderBounds(model);
+        BoxCollider box = model.AddComponent<BoxCollider>();
+        box.center = model.transform.InverseTransformPoint(world.center);
+        Vector3 ls = model.transform.lossyScale;
+        box.size = new Vector3(world.size.x / ls.x, world.size.y / ls.y, world.size.z / ls.z);
+        return model;
     }
 }

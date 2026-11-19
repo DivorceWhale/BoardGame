@@ -133,8 +133,9 @@ public class TurnStateMachine
         switch (a.type)
         {
             case ActionType.DrawEventCard:
-                State.eventCard = State.eventDeck.DrawData();
+                State.eventCard = SecretCardFlips() ? BalanceConfig.Current.secretCard : State.eventDeck.DrawData();
                 State.eventDrawn = true;
+                if (IsSecretCard(State.eventCard)) Log("    SECRET CARD: the flip is " + State.eventCard.title + " instead of the top event card.");
                 Log("    " + p.name + " draws event card: "
                     + (State.eventCard != null ? State.eventCard.title : "none"));
                 break;
@@ -656,6 +657,23 @@ public class TurnStateMachine
         NextBuildTurn();
     }
 
+    // Secret card (digital only): on each event flip, a small chance (QuakerBalance: secretCardOn, secretCardChance)
+    // that the flip is the secret card instead of the top event card. The event deck is left as it was.
+    // The full-game tests turn it off so their seeded games stay the same.
+    public bool SecretCardAllowed = true;
+
+    bool SecretCardFlips()
+    {
+        BalanceConfig b = BalanceConfig.Current;
+        if (!State.useRulesheet || !SecretCardAllowed || !b.secretCardOn || b.secretCard == null || b.secretCardChance <= 0f) return false;
+        return GameRandom.Instance.Next(10000) < (int)Math.Round(b.secretCardChance * 10000f);
+    }
+
+    public static bool IsSecretCard(CardData c)
+    {
+        return c != null && c == BalanceConfig.Current.secretCard;
+    }
+
     // How many rounds have got past their Event phase (an event card was flipped) over the whole match.
     public int RoundsUnderway { get; private set; }
 
@@ -803,7 +821,7 @@ public class TurnStateMachine
     // End-of-turn transition: clear the event, advance the round, pass play to the next player.
     private void EndOfTurn()
     {
-        if (State.eventCard != null) State.eventDeck.Discard(State.eventCard);
+        if (State.eventCard != null && !IsSecretCard(State.eventCard)) State.eventDeck.Discard(State.eventCard);   // the secret card never joins the deck
         State.eventCard = null;
         State.eventDrawn = false;
         State.round++;

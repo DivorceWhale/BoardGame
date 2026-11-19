@@ -143,6 +143,7 @@ public partial class QuakerPlay
     void Step7_ChooseTheFirstPlayer(int playerCount, DeckManager blockDeck, DeckManager eventDeck)
     {
         machine = new TurnStateMachine(blockDeck, eventDeck, rules, playerCount);
+        machine.SecretCardAllowed = !gameTestRunning;   // the full-game tests keep their seeded games
         machine.Log += Add;
         machine.BeforeNewGameShuffle += SeedGame;
         s = machine.State;

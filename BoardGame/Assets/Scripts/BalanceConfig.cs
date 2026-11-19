@@ -66,6 +66,15 @@ public class BalanceConfig : ScriptableObject
     [Tooltip("Placements every other player gets in a round.")]
     [Min(1)] public int placementsPerRound = 1;
 
+    [Header("Secret card (digital only)")]
+    [Tooltip("On: each time the event card is flipped there is a small chance it is the secret Wrecking Ball card instead. "
+        + "A wrecking ball drops on the tower and knocks the whole tower down. Off: it never appears.")]
+    public bool secretCardOn = true;
+    [Tooltip("Chance on each event flip. 0.01 = 1 in 100.")]
+    [Range(0f, 1f)] public float secretCardChance = 0.01f;
+    [Tooltip("The secret card (Prefabs/Cards/Secret/Wrecking Ball.asset).")]
+    public CardData secretCard;
+
     [Header("Physics feel")]
     [Tooltip("Gravity multiplier: the blocks are 4 units across, so normal gravity looks slow.")]
     [Min(0.1f)] public float gravityScale = 3f;
